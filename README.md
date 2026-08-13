@@ -56,6 +56,8 @@ curl -X POST http://localhost:8000/v1/predict \
 
 Or just open http://localhost:8000/ — the demo page has sample buttons and a side-by-side model comparison.
 
+When a prediction returns `OOD: flagged`, the demo stores a local review event in the browser's IndexedDB and shows it in the **OOD review history** table. This history survives refreshes but is browser/profile-specific, is not synchronized to the API, and can be deleted per row or cleared entirely from the page.
+
 ## Development
 
 ```bash

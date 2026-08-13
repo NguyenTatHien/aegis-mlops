@@ -6,73 +6,573 @@
 <title>Aegis — News Routing</title>
 <style>
   :root {
-    --bg: #0f1115; --panel: #171a21; --border: #262b36; --text: #e6e8ec; --muted: #9aa3b2;
-    --accent: #4f8cff; --good: #2ecc71; --warn: #f4b942; --bad: #e05a5a;
+    --bg-dark: #0a0c10;
+    --panel: rgba(23, 26, 33, 0.65);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(255, 255, 255, 0.15);
+    --text: #f0f2f5;
+    --muted: #94a0b8;
+    --accent: #4f8cff;
+    --accent-hover: #6b9fff;
+    --good: #2ecc71;
+    --warn: #f4b942;
+    --bad: #e05a5a;
+    --header-text: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
+    --article-bg: rgba(0, 0, 0, 0.3);
+    --model-choice-bg: rgba(0, 0, 0, 0.2);
+    --secondary-btn-bg: rgba(255, 255, 255, 0.05);
+    --confidence-track: rgba(0,0,0,0.3);
   }
+
+  body.light-mode {
+    --bg-dark: #f4f7fb;
+    --panel: rgba(255, 255, 255, 0.75);
+    --border: rgba(0, 0, 0, 0.1);
+    --border-hover: rgba(0, 0, 0, 0.25);
+    --text: #1a202c;
+    --muted: #64748b;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --header-text: linear-gradient(135deg, #0f172a 0%, #4f46e5 100%);
+    --article-bg: rgba(255, 255, 255, 0.6);
+    --model-choice-bg: rgba(255, 255, 255, 0.5);
+    --secondary-btn-bg: rgba(0, 0, 0, 0.04);
+    --confidence-track: rgba(0, 0, 0, 0.08);
+  }
+
   * { box-sizing: border-box; }
+
+  @keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
   body {
-    margin: 0; padding: 2rem 1rem; background: var(--bg); color: var(--text);
-    font-family: -apple-system, "Segoe UI", Roboto, sans-serif; display: flex; justify-content: center;
+    margin: 0;
+    padding: 3rem 1rem;
+    background-color: var(--bg-dark);
+    background-image:
+      radial-gradient(at 0% 0%, rgba(79, 140, 255, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(46, 204, 113, 0.1) 0px, transparent 50%);
+    background-size: 150% 150%;
+    animation: gradientBG 15s ease infinite;
+    color: var(--text);
+    font-family: "Segoe UI Variable", "Trebuchet MS", sans-serif;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    transition: background-color 0.5s ease, color 0.5s ease;
   }
-  main { width: 100%; max-width: 1080px; }
-  h1 { font-size: 1.4rem; margin: 0 0 .25rem; }
-  .subtitle { color: var(--muted); font-size: .9rem; margin-bottom: 1.5rem; }
-  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
-  textarea {
-    width: 100%; min-height: 110px; background: #0d0f13; color: var(--text); border: 1px solid var(--border);
-    border-radius: 8px; padding: .75rem; font-size: .95rem; resize: vertical;
+
+  main { width: 100%; max-width: 1080px; position: relative; }
+
+  .theme-toggle {
+    position: absolute;
+    top: -1.5rem;
+    right: 0;
+    cursor: pointer;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 0.6rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(20px);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
-  .row { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-top: .75rem; }
-  .model-choice label { margin-right: 1rem; cursor: pointer; color: var(--muted); }
-  .model-choice input { margin-right: .35rem; }
+  .theme-toggle:hover {
+    color: var(--text);
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+  }
+
+  h1 {
+    font-size: 2.8rem;
+    margin: 0 0 .5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: var(--header-text);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 1.1rem;
+    margin-bottom: 2.5rem;
+    font-weight: 400;
+  }
+
+  .card {
+    background: var(--panel);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .card:hover { border: 1px solid var(--border-hover); }
+
+  .article-editor {
+    background: var(--article-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .article-editor:focus-within {
+    border-color: rgba(79, 140, 255, 0.5);
+    box-shadow: 0 0 0 4px rgba(79, 140, 255, 0.1);
+  }
+
+  .article-editor input, .article-editor textarea {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+    width: 100%;
+    transition: color 0.3s ease;
+  }
+
+  .article-editor input {
+    font-size: 2rem;
+    font-weight: 700;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: -0.02em;
+  }
+
+  .article-editor input::placeholder, .article-editor textarea::placeholder { color: var(--muted); opacity: 0.6; }
+
+  .article-editor textarea {
+    font-size: 1.2rem;
+    line-height: 1.8;
+    padding: 1rem 0 0.5rem;
+    min-height: 200px;
+    resize: vertical;
+  }
+
+  .controls-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; }
+
+  .model-choice {
+    background: var(--model-choice-bg);
+    padding: 0.6rem 1rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .model-choice label {
+    cursor: pointer;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: opacity 0.2s ease;
+  }
+
+  .model-choice label:hover { opacity: 0.8; }
+
+  input[type="radio"] {
+    accent-color: var(--accent);
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+  }
+
   button {
-    background: var(--accent); color: white; border: none; border-radius: 8px; padding: .6rem 1.1rem;
-    font-size: .9rem; cursor: pointer;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(79, 140, 255, 0.2);
   }
-  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--muted); }
-  button:disabled { opacity: .5; cursor: not-allowed; }
-  .samples { margin-top: .5rem; }
-  .samples button { margin-right: .5rem; margin-top: .5rem; }
-  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-top: 1rem; }
-  .result-box { border: 1px solid var(--border); border-radius: 8px; padding: .9rem; }
-  .result-box h3 { margin: 0 0 .5rem; font-size: .85rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-  .label-big { font-size: 1.3rem; font-weight: 600; }
-  .confidence-bar-track { background: #0d0f13; border-radius: 6px; height: 8px; margin-top: .5rem; overflow: hidden; }
-  .confidence-bar-fill { background: var(--accent); height: 100%; }
-  .meta { color: var(--muted); font-size: .8rem; margin-top: .5rem; }
-  .badge { display: inline-block; padding: .2rem .55rem; border-radius: 999px; font-size: .78rem; font-weight: 600; }
-  .badge.clear { background: rgba(46,204,113,.15); color: var(--good); }
-  .badge.ood { background: rgba(224,90,90,.18); color: var(--bad); }
-  .badge.disabled { background: rgba(244,185,66,.15); color: var(--warn); }
+
+  button:hover:not(:disabled) {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(79, 140, 255, 0.35);
+  }
+
+  button.secondary {
+    background: var(--secondary-btn-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    box-shadow: none;
+  }
+
+  button.secondary:hover:not(:disabled) {
+    background: var(--secondary-btn-hover);
+    border-color: var(--border-hover);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .samples { margin-top: 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .samples button { padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 500; border-radius: 999px; }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 2rem;
+    animation: fadeInUp 0.5s ease forwards;
+  }
+
+  .result-box {
+    background: var(--panel);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.75rem;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .result-box:hover {
+    transform: translateY(-4px);
+    border-color: var(--border-hover);
+  }
+
+  .result-box h3 {
+    margin: 0 0 1rem;
+    font-size: 0.95rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .result-box h3::before {
+    content: '';
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .label-big {
+    font-size: 2.8rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+    background: var(--header-text);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .confidence-bar-track {
+    background: var(--confidence-track);
+    border-radius: 999px;
+    height: 10px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .confidence-bar-fill {
+    background: linear-gradient(90deg, #4f8cff, #6beaff);
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 0 10px rgba(79, 140, 255, 0.4);
+  }
+
+  .meta {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .meta-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border: 1px solid transparent;
+  }
+
+  .badge.clear { background: rgba(46,204,113,.1); color: var(--good); border-color: rgba(46,204,113,.2); }
+  .badge.ood { background: rgba(224,90,90,.1); color: var(--bad); border-color: rgba(224,90,90,.2); }
+  .badge.disabled { background: rgba(244,185,66,.1); color: var(--warn); border-color: rgba(244,185,66,.2); }
+
   .error-banner {
-    background: rgba(224,90,90,.15); border: 1px solid var(--bad); color: #ffb4b4;
-    border-radius: 8px; padding: .75rem 1rem; margin-bottom: 1rem; font-size: .9rem; display: none;
+    background: rgba(224,90,90,.1); border: 1px solid rgba(224,90,90,.3); color: var(--bad);
+    border-radius: 12px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; font-size: 0.95rem; display: none;
+    animation: fadeInUp 0.3s ease;
   }
-  .footer-note { color: var(--muted); font-size: .78rem; margin-top: 1.5rem; }
-  #classes-line { color: var(--muted); font-size: .8rem; margin-top: .5rem; }
-  .model-note { color: var(--muted); font-size: .78rem; line-height: 1.5; margin: .65rem 0 0; }
+
+  .footer-note { color: var(--muted); font-size: 0.85rem; margin-top: 3rem; text-align: center; opacity: 0.6; }
+
+  #classes-line {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .model-note { color: var(--muted); font-size: 0.85rem; line-height: 1.6; margin: 1.5rem 0 0; }
   .model-note strong { color: var(--warn); }
-  @media (max-width: 760px) { .result-grid { grid-template-columns: 1fr; } }
+
+  .history-card {
+    margin-top: 2rem;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .history-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1.5rem 1.75rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(224, 90, 90, 0.08), transparent 60%);
+  }
+
+  .history-title-wrap { display: flex; align-items: flex-start; gap: 0.85rem; }
+
+  .history-signal {
+    width: 11px;
+    height: 11px;
+    flex: 0 0 auto;
+    margin-top: 0.45rem;
+    border-radius: 50%;
+    background: var(--bad);
+    box-shadow: 0 0 0 5px rgba(224, 90, 90, 0.12), 0 0 18px rgba(224, 90, 90, 0.45);
+  }
+
+  .history-header h2 { margin: 0; font-size: 1.2rem; letter-spacing: -0.01em; }
+  .history-header p { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+
+  .history-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+  .history-count {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.2rem;
+    padding: 0.35rem 0.7rem;
+    border: 1px solid rgba(224, 90, 90, 0.25);
+    border-radius: 999px;
+    color: var(--bad);
+    background: rgba(224, 90, 90, 0.08);
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  button.danger {
+    padding: 0.55rem 0.85rem;
+    color: var(--bad);
+    background: rgba(224, 90, 90, 0.08);
+    border: 1px solid rgba(224, 90, 90, 0.25);
+    box-shadow: none;
+    font-size: 0.82rem;
+  }
+
+  button.danger:hover:not(:disabled) {
+    color: white;
+    background: var(--bad);
+    box-shadow: 0 5px 14px rgba(224, 90, 90, 0.25);
+  }
+
+  .history-status {
+    min-height: 1.5rem;
+    padding: 0.7rem 1.75rem 0;
+    color: var(--muted);
+    font-size: 0.8rem;
+  }
+
+  .history-status.error { color: var(--bad); }
+
+  .history-table-wrap { width: 100%; overflow-x: auto; padding: 0.75rem 1.25rem 1.25rem; }
+
+  .history-table { width: 100%; min-width: 880px; border-collapse: separate; border-spacing: 0 0.55rem; }
+
+  .history-table th {
+    padding: 0 0.75rem 0.3rem;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .history-table td {
+    padding: 0.9rem 0.75rem;
+    background: var(--article-bg);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    font-size: 0.84rem;
+  }
+
+  .history-table td:first-child { border-left: 1px solid var(--border); border-radius: 10px 0 0 10px; }
+  .history-table td:last-child { border-right: 1px solid var(--border); border-radius: 0 10px 10px 0; }
+
+  .history-time { color: var(--muted); white-space: nowrap; }
+  .history-input { max-width: 360px; }
+  .history-input strong { display: block; margin-bottom: 0.3rem; color: var(--text); }
+  .history-input span { color: var(--muted); line-height: 1.45; overflow-wrap: anywhere; }
+
+  .history-model-tag {
+    display: inline-flex;
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0.4rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--accent);
+    background: rgba(79, 140, 255, 0.08);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .history-result strong { display: block; color: var(--text); font-size: 0.95rem; }
+  .history-result span, .history-evidence span { display: block; margin-top: 0.25rem; color: var(--muted); }
+  .history-evidence strong { color: var(--bad); }
+  .history-empty { padding: 2.5rem 1rem !important; color: var(--muted); text-align: center; }
+
+  .row-delete {
+    padding: 0.4rem 0.65rem;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    box-shadow: none;
+    font-size: 0.78rem;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg-dark); }
+  ::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.3); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.5); }
+
+  @media (max-width: 768px) {
+    .result-grid { grid-template-columns: 1fr; }
+    h1 { font-size: 2.2rem; }
+    .theme-toggle { top: -3rem; }
+    .history-header { flex-direction: column; }
+    .history-actions { width: 100%; justify-content: space-between; }
+  }
+  /* Celestial Animation */
+  .celestial-container {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none; z-index: -1; overflow: hidden;
+  }
+  .celestial-body {
+    width: 250px; height: 250px; border-radius: 50%; position: absolute;
+    top: 120vh; left: 120vw;
+  }
+  .celestial-body.sun {
+    background: radial-gradient(circle, #fef08a 0%, #facc15 50%, transparent 80%);
+    box-shadow: 0 0 100px 50px rgba(250, 204, 21, 0.4);
+  }
+  .celestial-body.moon {
+    background: transparent;
+    box-shadow: inset 30px 0 0 0 #e2e8f0;
+    filter: drop-shadow(0 0 30px rgba(226, 232, 240, 0.4));
+  }
+  .celestial-visible {
+    top: 40px; left: 40px; transform: scale(1); opacity: 0.4;
+  }
+  @keyframes riseAndStay {
+    0% { top: 100vh; left: 100vw; transform: scale(0.5); opacity: 0; }
+    20% { opacity: 0.5; }
+    100% { top: 40px; left: 40px; transform: scale(1); opacity: 0.4; }
+  }
+  .animate-rise { animation: riseAndStay 3.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
 </style>
 </head>
 <body>
+<div class="celestial-container">
+  <div id="celestial" class="celestial-body"></div>
+</div>
 <main>
+  <div class="theme-toggle" id="theme-toggle" title="Toggle Light/Dark Mode">
+    <!-- Moon Icon -->
+    <svg id="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    <!-- Sun Icon -->
+    <svg id="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+  </div>
+
   <h1>Aegis — News Routing &amp; OOD Detection</h1>
   <p class="subtitle">Live demo of the classifier serving API. Every number below comes from <code>/v1/predict</code> and <code>/v1/model/info</code> — nothing is computed in this page.</p>
 
   <div id="error-banner" class="error-banner"></div>
 
   <div class="card">
-    <textarea id="text-input" placeholder="Paste a news article, or click a sample below…"></textarea>
-    <div id="classes-line">Classes: loading…</div>
-    <div class="row model-choice">
-      <label><input type="radio" name="model" value="roberta" checked /> RoBERTa (default)</label>
-      <label><input type="radio" name="model" value="baseline" /> TF-IDF + LogReg</label>
-      <label><input type="radio" name="model" value="svm" /> TF-IDF + LinearSVC</label>
-      <button id="classify-btn">Classify</button>
-      <button id="compare-btn" class="secondary">Compare all 3 models</button>
+    <div class="article-editor">
+      <input type="text" id="title-input" placeholder="Article Title (Optional)" />
+      <textarea id="text-input" placeholder="Paste the news article body here, or click a sample below…"></textarea>
     </div>
+
+    <div id="classes-line">Classes: loading…</div>
+
+    <div class="controls-row">
+      <div class="model-choice">
+        <label><input type="radio" name="model" value="roberta" checked /> RoBERTa (default)</label>
+        <label><input type="radio" name="model" value="svm" /> TF-IDF + LinearSVC</label>
+      </div>
+      <button id="classify-btn">Classify</button>
+      <button id="compare-btn" class="secondary">Compare both models</button>
+    </div>
+
     <p class="model-note"><strong>SVM note:</strong> its relative margin is a softmax-normalized decision score, not a calibrated probability; OOD is therefore disabled for this branch.</p>
+
     <div class="samples">
       <button class="secondary" data-sample="news">Sample: real news</button>
       <button class="secondary" data-sample="spam">Sample: spam/ad (likely OOD)</button>
@@ -81,24 +581,62 @@
 
   <div class="result-grid" id="result-grid" style="display:none;">
     <div class="result-box" id="box-roberta">
-      <h3>roberta</h3>
+      <h3>RoBERTa</h3>
       <div class="label-big">—</div>
       <div class="confidence-bar-track"><div class="confidence-bar-fill" style="width:0%"></div></div>
-      <div class="meta">—</div>
-    </div>
-    <div class="result-box" id="box-baseline">
-      <h3>baseline</h3>
-      <div class="label-big">—</div>
-      <div class="confidence-bar-track"><div class="confidence-bar-fill" style="width:0%"></div></div>
-      <div class="meta">—</div>
+      <div class="meta">
+        <div class="meta-stats">
+          <span>—</span>
+          <span>—</span>
+        </div>
+      </div>
     </div>
     <div class="result-box" id="box-svm">
-      <h3>svm · LinearSVC</h3>
+      <h3>SVM · LinearSVC</h3>
       <div class="label-big">—</div>
       <div class="confidence-bar-track"><div class="confidence-bar-fill" style="width:0%"></div></div>
-      <div class="meta">—</div>
+      <div class="meta">
+        <div class="meta-stats">
+          <span>—</span>
+          <span>—</span>
+        </div>
+      </div>
     </div>
   </div>
+
+  <section class="card history-card" id="ood-history" aria-labelledby="ood-history-title">
+    <div class="history-header">
+      <div class="history-title-wrap">
+        <span class="history-signal" aria-hidden="true"></span>
+        <div>
+          <h2 id="ood-history-title">OOD review history</h2>
+          <p>Flagged predictions are stored only in this browser using IndexedDB. They survive refreshes and are never sent back to the server.</p>
+        </div>
+      </div>
+      <div class="history-actions">
+        <span class="history-count" id="history-count">0 flagged</span>
+        <button class="danger" id="clear-history-btn" type="button" disabled>Clear history</button>
+      </div>
+    </div>
+    <div class="history-status" id="history-status" role="status" aria-live="polite"></div>
+    <div class="history-table-wrap">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th scope="col">Flagged at</th>
+            <th scope="col">Input snapshot</th>
+            <th scope="col">Model</th>
+            <th scope="col">Prediction</th>
+            <th scope="col">OOD evidence</th>
+            <th scope="col">Action</th>
+          </tr>
+        </thead>
+        <tbody id="history-body">
+          <tr><td class="history-empty" colspan="6">Loading local review history…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
   <p class="footer-note">Model info, label names, and OOD thresholds are fetched from the API at load time — this page has no hardcoded knowledge of them.</p>
 </main>
@@ -112,10 +650,63 @@
   const errorBanner = document.getElementById("error-banner");
   const resultGrid = document.getElementById("result-grid");
   const classesLine = document.getElementById("classes-line");
+  const historyBody = document.getElementById("history-body");
+  const historyCount = document.getElementById("history-count");
+  const historyStatus = document.getElementById("history-status");
+  const clearHistoryBtn = document.getElementById("clear-history-btn");
+
+  const HISTORY_DB_NAME = "aegis-browser-history";
+  const HISTORY_DB_VERSION = 1;
+  const HISTORY_STORE = "oodFlaggedEvents";
+  let historyDbPromise;
+
+  // Theme Toggle
+  const themeToggle = document.getElementById("theme-toggle");
+  const moonIcon = document.getElementById("moon-icon");
+  const sunIcon = document.getElementById("sun-icon");
+  const celestial = document.getElementById("celestial");
+
+  // Initial setup on load
+  function initTheme() {
+    const isLight = document.body.classList.contains("light-mode");
+    if (isLight) {
+      moonIcon.style.display = "none";
+      sunIcon.style.display = "block";
+      celestial.className = "celestial-body sun celestial-visible";
+    } else {
+      moonIcon.style.display = "block";
+      sunIcon.style.display = "none";
+      celestial.className = "celestial-body moon celestial-visible";
+    }
+  }
+  initTheme();
+
+  themeToggle.addEventListener("click", () => {
+    const isLight = document.body.classList.toggle("light-mode");
+
+    if (isLight) {
+      moonIcon.style.display = "none";
+      sunIcon.style.display = "block";
+    } else {
+      moonIcon.style.display = "block";
+      sunIcon.style.display = "none";
+    }
+
+    // Trigger celestial animation
+    celestial.className = "celestial-body";
+    void celestial.offsetWidth; // trigger reflow
+    celestial.classList.add(isLight ? "sun" : "moon", "animate-rise");
+  });
 
   const SAMPLES = {
-    news: "The national football team secured a dramatic victory in extra time last night, sending fans into celebration across the city.",
-    spam: "CLICK HERE NOW!!! You've been selected to WIN a FREE iPhone! Limited time offer, act now before it's gone, buy today!!!",
+    news: {
+      title: "Dramatic Victory in Extra Time",
+      text: "The national football team secured a dramatic victory in extra time last night, sending fans into celebration across the city."
+    },
+    spam: {
+      title: "WIN a FREE iPhone!!!",
+      text: "CLICK HERE NOW!!! You've been selected to WIN a FREE iPhone! Limited time offer, act now before it's gone, buy today!!!"
+    },
   };
 
   function showError(message) {
@@ -127,6 +718,251 @@
     errorBanner.textContent = "";
   }
 
+  function setHistoryStatus(message, isError = false) {
+    historyStatus.textContent = message;
+    historyStatus.classList.toggle("error", isError);
+  }
+
+  function openHistoryDb() {
+    if (!("indexedDB" in window)) {
+      return Promise.reject(new Error("IndexedDB is not available in this browser."));
+    }
+    if (historyDbPromise) return historyDbPromise;
+
+    historyDbPromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open(HISTORY_DB_NAME, HISTORY_DB_VERSION);
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        if (!db.objectStoreNames.contains(HISTORY_STORE)) {
+          const store = db.createObjectStore(HISTORY_STORE, { keyPath: "id", autoIncrement: true });
+          store.createIndex("createdAt", "createdAt", { unique: false });
+          store.createIndex("model", "model", { unique: false });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error || new Error("Could not open IndexedDB."));
+      request.onblocked = () => reject(new Error("IndexedDB upgrade is blocked by another tab."));
+    });
+
+    historyDbPromise.catch(() => { historyDbPromise = undefined; });
+    return historyDbPromise;
+  }
+
+  async function addHistoryEvent(event) {
+    const db = await openHistoryDb();
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction(HISTORY_STORE, "readwrite");
+      transaction.objectStore(HISTORY_STORE).add(event);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error("Could not save history."));
+      transaction.onabort = () => reject(transaction.error || new Error("History write aborted."));
+    });
+  }
+
+  async function pruneHistory(maxRecords = 500) {
+    const db = await openHistoryDb();
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction(HISTORY_STORE, "readwrite");
+      const index = transaction.objectStore(HISTORY_STORE).index("createdAt");
+      const request = index.openCursor(null, "prev");
+      let seen = 0;
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) return;
+        seen += 1;
+        if (seen > maxRecords) cursor.delete();
+        cursor.continue();
+      };
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error("Could not prune history."));
+    });
+  }
+
+  async function getHistoryEvents(limit = 100) {
+    const db = await openHistoryDb();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(HISTORY_STORE, "readonly");
+      const store = transaction.objectStore(HISTORY_STORE);
+      const countRequest = store.count();
+      const cursorRequest = store.index("createdAt").openCursor(null, "prev");
+      const events = [];
+
+      cursorRequest.onsuccess = () => {
+        const cursor = cursorRequest.result;
+        if (!cursor || events.length >= limit) return;
+        events.push(cursor.value);
+        cursor.continue();
+      };
+      transaction.oncomplete = () => resolve({ events, total: countRequest.result || 0 });
+      transaction.onerror = () => reject(transaction.error || new Error("Could not read history."));
+    });
+  }
+
+  async function deleteHistoryEvent(id) {
+    const db = await openHistoryDb();
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction(HISTORY_STORE, "readwrite");
+      transaction.objectStore(HISTORY_STORE).delete(id);
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error("Could not delete history item."));
+    });
+  }
+
+  async function clearHistoryEvents() {
+    const db = await openHistoryDb();
+    await new Promise((resolve, reject) => {
+      const transaction = db.transaction(HISTORY_STORE, "readwrite");
+      transaction.objectStore(HISTORY_STORE).clear();
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error || new Error("Could not clear history."));
+    });
+  }
+
+  function appendCell(row, className = "") {
+    const cell = document.createElement("td");
+    if (className) cell.className = className;
+    row.appendChild(cell);
+    return cell;
+  }
+
+  function shortText(value, maxLength = 220) {
+    const normalized = String(value || "").replace(/\s+/g, " ").trim();
+    return normalized.length > maxLength ? `${normalized.slice(0, maxLength - 1)}…` : normalized;
+  }
+
+  function formatFlaggedAt(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "Unknown time";
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "medium",
+    }).format(date);
+  }
+
+  function renderHistoryRows(events, total) {
+    historyBody.replaceChildren();
+    historyCount.textContent = `${total} flagged`;
+    clearHistoryBtn.disabled = total === 0;
+
+    if (events.length === 0) {
+      const row = document.createElement("tr");
+      const cell = appendCell(row, "history-empty");
+      cell.colSpan = 6;
+      cell.textContent = "No OOD-flagged predictions are stored in this browser yet.";
+      historyBody.appendChild(row);
+      return;
+    }
+
+    events.forEach((event) => {
+      const row = document.createElement("tr");
+
+      const timeCell = appendCell(row, "history-time");
+      timeCell.textContent = formatFlaggedAt(event.createdAt);
+
+      const inputCell = appendCell(row, "history-input");
+      const title = document.createElement("strong");
+      title.textContent = event.title || "Untitled input";
+      const excerpt = document.createElement("span");
+      excerpt.textContent = shortText(event.text);
+      inputCell.append(title, excerpt);
+
+      const modelCell = appendCell(row);
+      const modelTag = document.createElement("span");
+      modelTag.className = "history-model-tag";
+      modelTag.textContent = event.model;
+      const version = document.createElement("div");
+      version.className = "history-time";
+      version.textContent = event.modelVersion || "unknown version";
+      modelCell.append(modelTag, version);
+
+      const resultCell = appendCell(row, "history-result");
+      const predictedClass = document.createElement("strong");
+      predictedClass.textContent = event.predictedClass;
+      const score = document.createElement("span");
+      const scoreLabel = event.scoreType === "relative_margin" ? "relative margin" : "confidence";
+      score.textContent = `${scoreLabel} ${(Number(event.confidence) * 100).toFixed(1)}% · ${Number(event.latencyMs).toFixed(1)}ms`;
+      resultCell.append(predictedClass, score);
+
+      const evidenceCell = appendCell(row, "history-evidence");
+      const flagged = document.createElement("strong");
+      flagged.textContent = `FLAGGED · ${event.oodMethod}`;
+      const evidence = document.createElement("span");
+      evidence.textContent = `score ${Number(event.oodScore).toFixed(4)} · threshold ${Number(event.oodThreshold).toFixed(4)}`;
+      evidenceCell.append(flagged, evidence);
+
+      const actionCell = appendCell(row);
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "row-delete";
+      deleteButton.textContent = "Delete";
+      deleteButton.addEventListener("click", async () => {
+        deleteButton.disabled = true;
+        try {
+          await deleteHistoryEvent(event.id);
+          await loadHistory();
+          setHistoryStatus("Deleted one flagged event from this browser.");
+        } catch (error) {
+          deleteButton.disabled = false;
+          setHistoryStatus(error.message || String(error), true);
+        }
+      });
+      actionCell.appendChild(deleteButton);
+
+      historyBody.appendChild(row);
+    });
+  }
+
+  async function loadHistory() {
+    try {
+      const { events, total } = await getHistoryEvents(100);
+      renderHistoryRows(events, total);
+      if (total > events.length) {
+        setHistoryStatus(`Showing the newest ${events.length} of ${total} locally stored events.`);
+      } else {
+        setHistoryStatus(total === 0 ? "Only OOD: flagged predictions will appear here." : "History is up to date.");
+      }
+    } catch (error) {
+      historyCount.textContent = "Storage unavailable";
+      clearHistoryBtn.disabled = true;
+      historyBody.replaceChildren();
+      const row = document.createElement("tr");
+      const cell = appendCell(row, "history-empty");
+      cell.colSpan = 6;
+      cell.textContent = "Local OOD history is unavailable in this browser.";
+      historyBody.appendChild(row);
+      setHistoryStatus(error.message || String(error), true);
+    }
+  }
+
+  async function persistFlaggedResults(results, inputSnapshot) {
+    const flaggedResults = results.filter((result) => result.ood?.is_ood === true);
+    if (flaggedResults.length === 0) return;
+
+    try {
+      for (const result of flaggedResults) {
+        await addHistoryEvent({
+          createdAt: new Date().toISOString(),
+          title: inputSnapshot.title.slice(0, 300),
+          text: inputSnapshot.text.slice(0, 10000),
+          model: result.model,
+          predictedClass: result.predicted_class,
+          confidence: result.confidence,
+          scoreType: result.score_type,
+          latencyMs: result.latency_ms,
+          modelVersion: result.model_version,
+          oodMethod: result.ood.method,
+          oodScore: result.ood.score,
+          oodThreshold: result.ood.threshold,
+        });
+      }
+      await pruneHistory(500);
+      await loadHistory();
+      setHistoryStatus(`Saved ${flaggedResults.length} new OOD-flagged event${flaggedResults.length === 1 ? "" : "s"} for review.`);
+    } catch (error) {
+      setHistoryStatus(`Prediction succeeded, but local history could not be saved: ${error.message || String(error)}`, true);
+    }
+  }
+
   function selectedModel() {
     return document.querySelector('input[name="model"]:checked').value;
   }
@@ -136,7 +972,7 @@
       const resp = await fetch(`${API_BASE}/v1/model/info?model=roberta`);
       if (!resp.ok) throw new Error(`status ${resp.status}`);
       const info = await resp.json();
-      classesLine.textContent = `Classes: ${info.label_names.join(", ")}`;
+      classesLine.innerHTML = `<strong>Classes:</strong> ${info.label_names.join(", ")}`;
     } catch (err) {
       classesLine.textContent = "Classes: unavailable (could not reach /v1/model/info)";
     }
@@ -145,7 +981,7 @@
   function renderOodBadge(container, ood) {
     let badge = container.querySelector(".ood-badge");
     if (badge) badge.remove();
-    badge = document.createElement("span");
+    badge = document.createElement("div");
     badge.className = "badge ood-badge";
     if (ood === null || ood === undefined) {
       badge.classList.add("disabled");
@@ -163,15 +999,30 @@
   function renderResult(boxId, result) {
     const box = document.getElementById(boxId);
     box.querySelector(".label-big").textContent = result.predicted_class;
-    box.querySelector(".confidence-bar-fill").style.width = `${(result.confidence * 100).toFixed(1)}%`;
+
+    const bar = box.querySelector(".confidence-bar-fill");
+    bar.style.width = '0%';
+    setTimeout(() => {
+        bar.style.width = `${(result.confidence * 100).toFixed(1)}%`;
+    }, 50);
+
     const confidenceLabel = result.score_type === "relative_margin" ? "relative margin" : "confidence";
-    box.querySelector(".meta").innerHTML =
-      `${confidenceLabel} ${(result.confidence * 100).toFixed(1)}% · ${result.latency_ms.toFixed(1)}ms · ${result.model_version}`;
-    renderOodBadge(box, result.ood);
+
+    const metaContainer = box.querySelector(".meta");
+    metaContainer.innerHTML = `
+      <div class="meta-stats">
+        <span>${confidenceLabel} <strong>${(result.confidence * 100).toFixed(1)}%</strong></span>
+        <span>${result.latency_ms.toFixed(1)}ms · <span style="opacity: 0.5">${result.model_version}</span></span>
+      </div>
+    `;
+    renderOodBadge(metaContainer, result.ood);
   }
 
   async function classifyOne(model) {
-    const text = textInput.value;
+    const title = document.getElementById("title-input").value.trim();
+    const textBody = textInput.value.trim();
+    const text = title ? `${title}\n\n${textBody}` : textBody;
+
     const resp = await fetch(`${API_BASE}/v1/predict?model=${encodeURIComponent(model)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -192,7 +1043,10 @@
 
   async function handleClassify(bothModels) {
     clearError();
-    const text = textInput.value.trim();
+    const title = document.getElementById("title-input").value.trim();
+    const textBody = textInput.value.trim();
+    const text = title ? `${title}\n\n${textBody}` : textBody;
+
     if (!text) {
       showError("Please enter some text before classifying.");
       return;
@@ -201,17 +1055,30 @@
     compareBtn.disabled = true;
     try {
       resultGrid.style.display = "grid";
+      // Reset animations
+      document.querySelectorAll('.result-box .label-big').forEach(el => el.textContent = "—");
+      document.querySelectorAll('.confidence-bar-fill').forEach(el => el.style.width = "0%");
+      document.querySelectorAll('.meta-stats').forEach(el => el.innerHTML = "<span>—</span><span>—</span>");
+      document.querySelectorAll('.ood-badge').forEach(el => el.remove());
+
       if (bothModels) {
-        const [roberta, baseline, svm] = await Promise.all([
-          classifyOne("roberta"), classifyOne("baseline"), classifyOne("svm")
+        const [roberta, svm] = await Promise.all([
+          classifyOne("roberta"), classifyOne("svm")
         ]);
         renderResult("box-roberta", roberta);
-        renderResult("box-baseline", baseline);
         renderResult("box-svm", svm);
+        await persistFlaggedResults([roberta, svm], { title, text: textBody });
       } else {
         const model = selectedModel();
         const result = await classifyOne(model);
         renderResult(`box-${model}`, result);
+        await persistFlaggedResults([result], { title, text: textBody });
+
+        // Clear the other box if only running one
+        const otherModel = model === 'roberta' ? 'svm' : 'roberta';
+        const otherBox = document.getElementById(`box-${otherModel}`);
+        otherBox.querySelector(".label-big").textContent = "—";
+        otherBox.querySelector(".confidence-bar-fill").style.width = "0%";
       }
     } catch (err) {
       showError(err.message || String(err));
@@ -224,14 +1091,33 @@
   classifyBtn.addEventListener("click", () => handleClassify(false));
   compareBtn.addEventListener("click", () => handleClassify(true));
 
+  clearHistoryBtn.addEventListener("click", async () => {
+    if (!window.confirm("Clear all OOD-flagged history stored in this browser?")) return;
+    clearHistoryBtn.disabled = true;
+    try {
+      await clearHistoryEvents();
+      await loadHistory();
+      setHistoryStatus("Cleared all locally stored OOD review history.");
+    } catch (error) {
+      setHistoryStatus(error.message || String(error), true);
+      clearHistoryBtn.disabled = false;
+    }
+  });
+
   document.querySelectorAll("[data-sample]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      textInput.value = SAMPLES[btn.dataset.sample];
+      const sample = SAMPLES[btn.dataset.sample];
+      document.getElementById("title-input").value = sample.title;
+      textInput.value = sample.text;
       clearError();
+
+      // Animate focus
+      document.getElementById("title-input").focus();
     });
   });
 
   loadModelInfo();
+  loadHistory();
 })();
 </script>
 </body>

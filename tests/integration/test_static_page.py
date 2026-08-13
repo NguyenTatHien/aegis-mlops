@@ -49,3 +49,42 @@ def test_page_fetches_model_info_and_predict_endpoints() -> None:
     assert "/v1/predict" in html
     assert 'value="svm"' in html
     assert 'classifyOne("svm")' in html
+
+
+@pytest.mark.integration
+def test_page_persists_only_ood_flagged_results_in_indexeddb() -> None:
+    from pathlib import Path
+
+    html = (
+        Path(__file__).resolve().parents[2] / "src" / "aegis" / "api" / "static" / "index.html"
+    ).read_text(encoding="utf-8")
+
+    assert 'const HISTORY_DB_NAME = "aegis-browser-history"' in html
+    assert 'const HISTORY_STORE = "oodFlaggedEvents"' in html
+    assert "result.ood?.is_ood === true" in html
+    assert "await addHistoryEvent" in html
+    assert "await persistFlaggedResults" in html
+
+
+@pytest.mark.integration
+def test_page_has_local_ood_review_table_and_delete_actions() -> None:
+    from pathlib import Path
+
+    html = (
+        Path(__file__).resolve().parents[2] / "src" / "aegis" / "api" / "static" / "index.html"
+    ).read_text(encoding="utf-8")
+
+    for required in [
+        'id="ood-history"',
+        'id="history-body"',
+        'id="history-count"',
+        'id="clear-history-btn"',
+        "deleteHistoryEvent(event.id)",
+        "clearHistoryEvents()",
+    ]:
+        assert required in html
+
+    # User-supplied title/body must be inserted through DOM text nodes, not
+    # interpolated into HTML, so a stored payload cannot become executable.
+    assert 'title.textContent = event.title || "Untitled input"' in html
+    assert "excerpt.textContent = shortText(event.text)" in html
