@@ -1,6 +1,6 @@
 """Task 6.7/6.9 — verifies the retrained baseline (LogisticRegression, not
 the notebook's LinearSVC) actually has calibrated predict_proba, and that
-model comparison reads real numbers from both branches on the same test set.
+model comparison reads real numbers from all three branches on the same test set.
 
 Marked `model` (design.md D11): needs the real AG News-trained artifacts
 under content/aegis_artifacts/baseline, produced by
@@ -30,7 +30,7 @@ def _require_baseline_artifacts() -> None:
 
 def test_predict_proba_sums_to_one() -> None:
     _require_baseline_artifacts()
-    vectorizer = joblib.load(BASELINE_DIR / "tfidf_vectorizer.joblib")
+    vectorizer = joblib.load(BASELINE_DIR / "logreg_tfidf_vectorizer.joblib")
     model = joblib.load(BASELINE_DIR / "logreg_model.joblib")
 
     from aegis.data.preprocess import clean_text_tfidf
@@ -62,6 +62,7 @@ def test_model_comparison_has_both_branches_same_test_set_metric() -> None:
     rows = json.loads(MODEL_COMPARISON_PATH.read_text(encoding="utf-8"))
     models = {row["model"] for row in rows}
     assert "RoBERTa-base" in models
-    assert any("LogisticRegression" in m or "SVM" in m for m in models)
+    assert "TF-IDF + LogisticRegression" in models
+    assert "TF-IDF + Linear SVM" in models
     for row in rows:
         assert "val_macro_f1" in row and "test_macro_f1" in row

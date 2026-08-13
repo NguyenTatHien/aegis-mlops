@@ -10,7 +10,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-ModelName = Literal["baseline", "roberta"]
+ModelName = Literal["baseline", "svm", "roberta"]
+ScoreType = Literal["probability", "relative_margin"]
 
 
 class PredictRequest(BaseModel):
@@ -52,6 +53,7 @@ class OODResult(BaseModel):
 class PredictResponse(BaseModel):
     predicted_class: str
     confidence: float
+    score_type: ScoreType = "probability"
     model: ModelName
     ood: OODResult | None = None
     latency_ms: float

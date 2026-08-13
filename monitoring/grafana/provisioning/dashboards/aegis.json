@@ -48,10 +48,10 @@
       "targets": [{ "expr": "sum(rate(predictions_by_class_total[5m])) by (predicted_class, model)", "legendFormat": "{{model}} — {{predicted_class}}" }]
     },
     {
-      "id": 8, "type": "heatmap", "title": "Confidence distribution",
+      "id": 8, "type": "heatmap", "title": "Probability confidence distribution",
       "gridPos": { "h": 7, "w": 8, "x": 8, "y": 9 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [{ "expr": "sum(rate(prediction_confidence_bucket[5m])) by (le)", "format": "heatmap" }]
+      "targets": [{ "expr": "sum(rate(prediction_confidence_bucket{model!=\"svm\"}[5m])) by (le, model)", "legendFormat": "{{model}}", "format": "heatmap" }]
     },
     {
       "id": 9, "type": "timeseries", "title": "OOD rate (with alert threshold)",
@@ -76,6 +76,13 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": { "defaults": { "mappings": [{ "type": "value", "options": { "0": { "text": "DISABLED", "color": "yellow" }, "1": { "text": "ENABLED", "color": "green" } } }] }, "overrides": [] },
       "targets": [{ "expr": "ood_enabled", "legendFormat": "{{model}}" }]
+    },
+    {
+      "id": 13, "type": "heatmap", "title": "SVM relative margin distribution",
+      "description": "Softmax-normalized LinearSVC decision margin. This is not a calibrated probability.",
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 23 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(prediction_relative_margin_bucket{model=\"svm\"}[5m])) by (le, model)", "legendFormat": "{{model}}", "format": "heatmap" }]
     }
   ]
 }

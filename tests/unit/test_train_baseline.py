@@ -95,6 +95,6 @@ def test_save_baseline_artifacts_writes_expected_files(tmp_path: Path) -> None:
     )
     save_baseline_artifacts(result, tmp_path)
 
-    assert (tmp_path / "tfidf_vectorizer.joblib").exists()
+    assert (tmp_path / "logreg_tfidf_vectorizer.joblib").exists()
     assert (tmp_path / "logreg_model.joblib").exists()
     assert (tmp_path / "baseline_results.json").exists()

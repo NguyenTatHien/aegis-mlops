@@ -25,7 +25,7 @@ class BaselinePredictor:
     def __init__(self, baseline_dir: Path) -> None:
         self._label_names = get_label_names()
 
-        self.vectorizer = joblib.load(baseline_dir / "tfidf_vectorizer.joblib")
+        self.vectorizer = joblib.load(baseline_dir / "logreg_tfidf_vectorizer.joblib")
         self.model = joblib.load(baseline_dir / "logreg_model.joblib")
 
         self.version = "baseline-logreg-v1"

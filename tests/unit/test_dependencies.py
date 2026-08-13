@@ -13,8 +13,9 @@ def test_default_predictor_factory_mock_source(monkeypatch: pytest.MonkeyPatch) 
     config_module.get_settings.cache_clear()
     try:
         predictors = default_predictor_factory()
-        assert set(predictors) == {"baseline", "roberta"}
+        assert set(predictors) == {"baseline", "svm", "roberta"}
         assert isinstance(predictors["baseline"], MockPredictor)
+        assert isinstance(predictors["svm"], MockPredictor)
         assert isinstance(predictors["roberta"], MockPredictor)
     finally:
         config_module.get_settings.cache_clear()

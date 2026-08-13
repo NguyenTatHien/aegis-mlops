@@ -52,6 +52,23 @@ def test_ood_metrics_registered_at_zero_when_disabled(client: TestClient) -> Non
 
 
 @pytest.mark.integration
+def test_svm_metrics_are_registered_at_startup(client: TestClient) -> None:
+    text = client.get("/metrics").text
+    value = _metric_value(text, "ood_enabled", {"model": "svm"})
+    assert value == 0.0
+
+
+@pytest.mark.integration
+def test_svm_margin_is_not_recorded_as_probability_confidence(client: TestClient) -> None:
+    client.post("/v1/predict?model=svm", json={"text": "Team wins the championship."})
+    text = client.get("/metrics").text
+    margin_count = _metric_value(text, "prediction_relative_margin_count", {"model": "svm"})
+    confidence_count = _metric_value(text, "prediction_confidence_count", {"model": "svm"})
+    assert margin_count == 1.0
+    assert confidence_count is None
+
+
+@pytest.mark.integration
 def test_latency_histogram_has_500ms_bucket() -> None:
     from aegis.api.metrics import create_metrics
 

@@ -44,21 +44,24 @@ Four containers (`api`, `mlflow`, `prometheus`, `grafana`) on one Docker network
 
 ```
 AG News (HuggingFace) ──┬─→ 90/10 stratified split (seed=42) ─┬─→ TF-IDF + LogisticRegression (baseline)
+                         │                                     ├─→ TF-IDF + LinearSVC (original SVM)
                          │                                     └─→ RoBERTa-base fine-tune (offline, notebooks/)
                          │
 sms_spam + tweet_eval/hate ─→ OOD proxy (spam / toxic) ─→ RoBERTa logits ─→ MSP / Energy scoring ─→ threshold sweep
                                                                                                      (scripts/recalibrate_ood.py)
 ```
 
-Client request → `POST /v1/predict` → preprocessing branch (`clean_text_tfidf` for baseline, `passthrough` for RoBERTa — never swapped, see Decisions) → predictor → `{predicted_class, confidence, ood}` → Prometheus metrics recorded → response.
+Client request → `POST /v1/predict` → preprocessing branch (`clean_text_tfidf` for LogReg/SVM, `passthrough` for RoBERTa — never swapped, see Decisions) → predictor → `{predicted_class, confidence, ood}` → Prometheus metrics recorded → response.
 
 ## Key decisions and trade-offs
 
-**Two models behind one API, not one.** `/v1/predict?model=baseline|roberta` (default `roberta`). RoBERTa scores 2.6 points higher macro-F1 (0.9517 vs 0.9249) and is the only branch OOD detection can run on — `LinearSVC`'s `decision_function` isn't a calibrated probability, so the notebook's original baseline couldn't support `confidence` or entropy-based OOD at all. Switching the baseline to `LogisticRegression` fixed that. Keeping both branches means the model comparison in `content/aegis_artifacts/model_comparison.json` is a running feature (visible on the Grafana dashboard, split by the `model` label) instead of a static table nobody looks at again.
+**Three trained models behind one API.** `/v1/predict?model=baseline|svm|roberta` defaults to `roberta`. The `svm` branch preserves the team's original `LinearSVC` artifact for live F1/label/latency comparison; its softmax-normalized decision score is explicitly a relative margin, not a calibrated probability, so OOD stays disabled for SVM. LogReg supplies `predict_proba` for the lightweight probabilistic branch, while RoBERTa remains the primary model and supports Energy OOD. Grafana splits probabilities and SVM relative margins into separate panels.
 
 **OOD is a pure function of logits.** `OODDetector.score(logits) -> float` never tokenizes, loads a model, or reads a file. This is what let ~90% of the system (API, Docker, Prometheus, Grafana, CI) get built and tested with `MockPredictor` before the real 498MB model ever needed to load — see `openspec/changes/build-aegis-mlops-system/design.md` decision D12 for the full build order.
 
-**Preprocessing is not shared between branches.** `clean_text_tfidf()` (lowercase, strip digits/punctuation) is baseline-only. RoBERTa was trained on raw text; feeding it cleaned text would silently shift the logit distribution the OOD thresholds were calibrated against. This exact bug existed in the original research notebook's `aegis_predict()` helper and is now a regression test (`tests/model/test_real_predictors.py::test_roberta_predictor_text_not_cleaned_before_tokenize`).
+**Preprocessing follows the trained branch.** `clean_text_tfidf()` (lowercase, strip digits/punctuation) is shared by LogReg and LinearSVC because both were trained on the same TF-IDF representation. RoBERTa receives raw text; feeding it cleaned text would silently shift the logit distribution the OOD thresholds were calibrated against. This exact bug existed in the original research notebook's `aegis_predict()` helper and is now a regression test (`tests/model/test_real_predictors.py::test_roberta_predictor_text_not_cleaned_before_tokenize`).
+
+**Each classical model owns its fitted vectorizer.** `logreg_tfidf_vectorizer.joblib` and `svm_tfidf_vectorizer.joblib` both expose 50,000 columns, but their vocabulary indices differ because they were fitted in separate training runs. Pairing SVM weights with the LogReg vectorizer silently produces plausible-shaped but invalid predictions, so serving and training use model-specific artifact names.
 
 **`max_len=128` and label names come from `ood_config.json`, never from the model's own `config.json`.** `roberta_final/config.json` ships `id2label={"0":"LABEL_0",...}` and `model_max_length=512` — neither is correct for serving (real names are `World/Sports/Business/Sci-Tech`; the model was trained and OOD-calibrated at 128, not 512).
 

@@ -11,6 +11,7 @@ from aegis.serving.base import PredictionResult, Predictor
 _FIXED_LOGITS: dict[str, np.ndarray] = {
     "roberta": np.array([0.2, 6.5, 0.1, 0.3]),  # confidently "Sports"
     "baseline": np.array([0.1, 0.2, 0.3, 5.0]),  # confidently "Sci/Tech"
+    "svm": np.array([0.2, 0.3, 4.8, 0.1]),  # margin-like scores: "Business"
 }
 
 
@@ -47,11 +48,13 @@ class MockPredictor:
             confidence=float(probs[idx]),
             logits=logits,
             model_version=self.version,
+            score_type="relative_margin" if self.name == "svm" else "probability",
         )
 
 
 def mock_predictor_factory() -> dict[str, Predictor]:
     return {
         "baseline": MockPredictor("baseline", macro_f1=0.9259),
+        "svm": MockPredictor("svm", macro_f1=0.925893),
         "roberta": MockPredictor("roberta", macro_f1=0.9517),
     }

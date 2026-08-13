@@ -12,7 +12,11 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from aegis.api.dependencies import PredictorFactory, default_predictor_factory
+from aegis.api.dependencies import (
+    PredictorFactory,
+    build_ood_detector_for_model,
+    default_predictor_factory,
+)
 from aegis.api.metrics import create_metrics
 from aegis.api.routes import router
 from aegis.api.schemas import ErrorResponse
@@ -48,7 +52,8 @@ def create_app(predictor_factory: PredictorFactory | None = None) -> FastAPI:
                     model=predictor.name, version=predictor.version, macro_f1=predictor.macro_f1
                 )
                 app.state.metrics.set_ood_enabled(
-                    model=predictor.name, enabled=settings.ood_enabled
+                    model=predictor.name,
+                    enabled=build_ood_detector_for_model(predictor.name).enabled,
                 )
         except Exception:
             logger.exception("failed to load predictors at startup")

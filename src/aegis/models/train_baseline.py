@@ -125,7 +125,10 @@ def save_baseline_artifacts(result: dict[str, Any], output_dir: Path) -> None:
     import joblib
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    joblib.dump(result["vectorizer"], output_dir / "tfidf_vectorizer.joblib")
+    # This vectorizer is fitted together with LogReg. Keep it model-specific:
+    # overwriting the notebook SVM's vectorizer silently reorders vocabulary
+    # columns while preserving the same 50k shape, corrupting SVM inference.
+    joblib.dump(result["vectorizer"], output_dir / "logreg_tfidf_vectorizer.joblib")
     joblib.dump(result["model"], output_dir / "logreg_model.joblib")
 
     report = {k: v for k, v in result.items() if k not in {"vectorizer", "model"}}

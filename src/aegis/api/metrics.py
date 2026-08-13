@@ -22,7 +22,7 @@ from prometheus_client import (
     generate_latest,
 )
 
-_KNOWN_MODELS = ("baseline", "roberta")
+_KNOWN_MODELS = ("baseline", "svm", "roberta")
 _KNOWN_OOD_METHODS = ("msp", "energy", "entropy")
 
 
@@ -57,6 +57,7 @@ class Metrics:
     inference_duration_seconds: Histogram
     predictions_by_class_total: Counter
     prediction_confidence: Histogram
+    prediction_relative_margin: Histogram
     ood_detected_total: Counter
     ood_score: Histogram
     ood_rate: Gauge
@@ -73,6 +74,7 @@ class Metrics:
         status_code: int,
         predicted_class: str,
         confidence: float,
+        score_type: str,
         latency_seconds: float,
         inference_seconds: float,
         text_word_count: int,
@@ -87,7 +89,10 @@ class Metrics:
         self.inference_duration_seconds.labels(model=model).observe(inference_seconds)
         self.input_text_length_words.labels(model=model).observe(text_word_count)
         self.predictions_by_class_total.labels(predicted_class=predicted_class, model=model).inc()
-        self.prediction_confidence.labels(model=model).observe(confidence)
+        if score_type == "relative_margin":
+            self.prediction_relative_margin.labels(model=model).observe(confidence)
+        else:
+            self.prediction_confidence.labels(model=model).observe(confidence)
 
         if ood_method is not None:
             if ood_is_ood:
@@ -151,7 +156,14 @@ def create_metrics() -> Metrics:
         ),
         prediction_confidence=Histogram(
             "prediction_confidence",
-            "Predicted-class confidence distribution",
+            "Predicted-class probability distribution (excludes uncalibrated SVM margins)",
+            ["model"],
+            buckets=(0.25, 0.5, 0.7, 0.8, 0.9, 0.95, 0.99, 1.0),
+            registry=registry,
+        ),
+        prediction_relative_margin=Histogram(
+            "prediction_relative_margin",
+            "Softmax-normalized relative decision margin for uncalibrated SVM",
             ["model"],
             buckets=(0.25, 0.5, 0.7, 0.8, 0.9, 0.95, 0.99, 1.0),
             registry=registry,

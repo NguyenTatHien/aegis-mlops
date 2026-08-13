@@ -14,7 +14,7 @@
     margin: 0; padding: 2rem 1rem; background: var(--bg); color: var(--text);
     font-family: -apple-system, "Segoe UI", Roboto, sans-serif; display: flex; justify-content: center;
   }
-  main { width: 100%; max-width: 780px; }
+  main { width: 100%; max-width: 1080px; }
   h1 { font-size: 1.4rem; margin: 0 0 .25rem; }
   .subtitle { color: var(--muted); font-size: .9rem; margin-bottom: 1.5rem; }
   .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
@@ -33,7 +33,7 @@
   button:disabled { opacity: .5; cursor: not-allowed; }
   .samples { margin-top: .5rem; }
   .samples button { margin-right: .5rem; margin-top: .5rem; }
-  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: 1rem; }
+  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-top: 1rem; }
   .result-box { border: 1px solid var(--border); border-radius: 8px; padding: .9rem; }
   .result-box h3 { margin: 0 0 .5rem; font-size: .85rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
   .label-big { font-size: 1.3rem; font-weight: 600; }
@@ -50,6 +50,9 @@
   }
   .footer-note { color: var(--muted); font-size: .78rem; margin-top: 1.5rem; }
   #classes-line { color: var(--muted); font-size: .8rem; margin-top: .5rem; }
+  .model-note { color: var(--muted); font-size: .78rem; line-height: 1.5; margin: .65rem 0 0; }
+  .model-note strong { color: var(--warn); }
+  @media (max-width: 760px) { .result-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -65,9 +68,11 @@
     <div class="row model-choice">
       <label><input type="radio" name="model" value="roberta" checked /> RoBERTa (default)</label>
       <label><input type="radio" name="model" value="baseline" /> TF-IDF + LogReg</label>
+      <label><input type="radio" name="model" value="svm" /> TF-IDF + LinearSVC</label>
       <button id="classify-btn">Classify</button>
-      <button id="compare-btn" class="secondary">Compare both models</button>
+      <button id="compare-btn" class="secondary">Compare all 3 models</button>
     </div>
+    <p class="model-note"><strong>SVM note:</strong> its relative margin is a softmax-normalized decision score, not a calibrated probability; OOD is therefore disabled for this branch.</p>
     <div class="samples">
       <button class="secondary" data-sample="news">Sample: real news</button>
       <button class="secondary" data-sample="spam">Sample: spam/ad (likely OOD)</button>
@@ -83,6 +88,12 @@
     </div>
     <div class="result-box" id="box-baseline">
       <h3>baseline</h3>
+      <div class="label-big">—</div>
+      <div class="confidence-bar-track"><div class="confidence-bar-fill" style="width:0%"></div></div>
+      <div class="meta">—</div>
+    </div>
+    <div class="result-box" id="box-svm">
+      <h3>svm · LinearSVC</h3>
       <div class="label-big">—</div>
       <div class="confidence-bar-track"><div class="confidence-bar-fill" style="width:0%"></div></div>
       <div class="meta">—</div>
@@ -153,8 +164,9 @@
     const box = document.getElementById(boxId);
     box.querySelector(".label-big").textContent = result.predicted_class;
     box.querySelector(".confidence-bar-fill").style.width = `${(result.confidence * 100).toFixed(1)}%`;
+    const confidenceLabel = result.score_type === "relative_margin" ? "relative margin" : "confidence";
     box.querySelector(".meta").innerHTML =
-      `confidence ${(result.confidence * 100).toFixed(1)}% · ${result.latency_ms.toFixed(1)}ms · ${result.model_version}`;
+      `${confidenceLabel} ${(result.confidence * 100).toFixed(1)}% · ${result.latency_ms.toFixed(1)}ms · ${result.model_version}`;
     renderOodBadge(box, result.ood);
   }
 
@@ -190,13 +202,16 @@
     try {
       resultGrid.style.display = "grid";
       if (bothModels) {
-        const [roberta, baseline] = await Promise.all([classifyOne("roberta"), classifyOne("baseline")]);
+        const [roberta, baseline, svm] = await Promise.all([
+          classifyOne("roberta"), classifyOne("baseline"), classifyOne("svm")
+        ]);
         renderResult("box-roberta", roberta);
         renderResult("box-baseline", baseline);
+        renderResult("box-svm", svm);
       } else {
         const model = selectedModel();
         const result = await classifyOne(model);
-        renderResult(model === "roberta" ? "box-roberta" : "box-baseline", result);
+        renderResult(`box-${model}`, result);
       }
     } catch (err) {
       showError(err.message || String(err));

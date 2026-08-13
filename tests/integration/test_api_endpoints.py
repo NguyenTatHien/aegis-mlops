@@ -31,6 +31,30 @@ def test_predict_baseline_branch(client: TestClient) -> None:
 
 
 @pytest.mark.integration
+def test_predict_svm_branch(client: TestClient) -> None:
+    resp = client.post("/v1/predict?model=svm", json={"text": "Quarterly earnings beat estimates."})
+    assert resp.status_code == 200
+    assert resp.json()["model"] == "svm"
+    assert resp.json()["score_type"] == "relative_margin"
+
+
+@pytest.mark.integration
+def test_svm_ood_is_disabled_even_when_global_flag_enabled(
+    client_ood_enabled: TestClient,
+) -> None:
+    resp = client_ood_enabled.post(
+        "/v1/predict?model=svm", json={"text": "Click here to win a free phone."}
+    )
+    assert resp.status_code == 200
+    assert resp.json()["ood"] is None
+    assert resp.json()["score_type"] == "relative_margin"
+
+    info = client_ood_enabled.get("/v1/model/info?model=svm")
+    assert info.status_code == 200
+    assert info.json()["ood_enabled"] is False
+
+
+@pytest.mark.integration
 def test_predict_invalid_model_name_rejected(client: TestClient) -> None:
     resp = client.post("/v1/predict?model=gpt4", json={"text": "hello"})
     assert resp.status_code == 422

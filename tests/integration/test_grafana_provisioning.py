@@ -63,7 +63,7 @@ def test_dashboard_has_ml_row_panels() -> None:
     titles = [p["title"] for p in dashboard["panels"]]
     for expected in [
         "Predictions by class",
-        "Confidence distribution",
+        "Probability confidence distribution",
         "OOD rate (with alert threshold)",
     ]:
         assert expected in titles
@@ -78,6 +78,26 @@ def test_dashboard_latency_panel_split_by_model_label() -> None:
         p for p in dashboard["panels"] if p["title"] == "p95 Latency by model (SLO: 500ms)"
     )
     assert "by (le, model)" in panel["targets"][0]["expr"]
+
+
+@pytest.mark.integration
+def test_dashboard_confidence_panel_split_by_model_label() -> None:
+    dashboard = json.loads(
+        (PROVISIONING_DIR / "dashboards" / "aegis.json").read_text(encoding="utf-8")
+    )
+    panel = next(
+        p for p in dashboard["panels"] if p["title"] == "Probability confidence distribution"
+    )
+    assert "by (le, model)" in panel["targets"][0]["expr"]
+
+
+@pytest.mark.integration
+def test_dashboard_has_separate_svm_relative_margin_panel() -> None:
+    dashboard = json.loads(
+        (PROVISIONING_DIR / "dashboards" / "aegis.json").read_text(encoding="utf-8")
+    )
+    panel = next(p for p in dashboard["panels"] if p["title"] == "SVM relative margin distribution")
+    assert "prediction_relative_margin_bucket" in panel["targets"][0]["expr"]
 
 
 @pytest.mark.integration

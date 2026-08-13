@@ -1,6 +1,11 @@
 {
   "model_comparison": [
     {
+      "model": "TF-IDF + LogisticRegression",
+      "val_macro_f1": 0.9266042961415379,
+      "test_macro_f1": 0.9248699462307742
+    },
+    {
       "model": "TF-IDF + Linear SVM",
       "val_macro_f1": 0.9236907894878026,
       "test_macro_f1": 0.9258930625496365

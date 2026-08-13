@@ -47,3 +47,5 @@ def test_page_fetches_model_info_and_predict_endpoints() -> None:
     ).read_text(encoding="utf-8")
     assert "/v1/model/info" in html
     assert "/v1/predict" in html
+    assert 'value="svm"' in html
+    assert 'classifyOne("svm")' in html

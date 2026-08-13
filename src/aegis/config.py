@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     model_source: str = Field(default="local", alias="MODEL_SOURCE")  # local | registry
-    model_default: str = Field(default="roberta", alias="MODEL_DEFAULT")  # baseline | roberta
+    model_default: str = Field(default="roberta", alias="MODEL_DEFAULT")  # baseline | svm | roberta
     ood_enabled: bool = Field(default=False, alias="OOD_ENABLED")
 
     artifacts_dir: Path = Field(default=Path("artifacts"), alias="ARTIFACTS_DIR")

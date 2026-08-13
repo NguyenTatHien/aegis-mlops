@@ -73,10 +73,14 @@ class MLflowBaselinePredictor:
 
 def load_from_registry(settings: Settings) -> dict[str, Predictor]:
     from aegis.serving.roberta_predictor import RobertaPredictor
+    from aegis.serving.svm_predictor import SVMPredictor
 
     return {
         "baseline": MLflowBaselinePredictor(
             settings.mlflow_baseline_model_uri, settings.mlflow_tracking_uri
         ),
+        # The original LinearSVC artifact shares the local TF-IDF vectorizer;
+        # like RoBERTa weights, it remains on the mounted artifact volume.
+        "svm": SVMPredictor(settings.baseline_dir),
         "roberta": RobertaPredictor(settings.roberta_model_dir),
     }

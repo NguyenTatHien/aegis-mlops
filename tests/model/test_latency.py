@@ -36,11 +36,35 @@ def test_roberta_p95_latency_under_500ms() -> None:
 
 
 def test_baseline_p95_latency_under_500ms() -> None:
-    if not (BASELINE_DIR / "logreg_model.joblib").exists():
+    if (
+        not (BASELINE_DIR / "logreg_model.joblib").exists()
+        or not (BASELINE_DIR / "logreg_tfidf_vectorizer.joblib").exists()
+    ):
         pytest.skip("baseline not trained yet")
     from aegis.serving.baseline_predictor import BaselinePredictor
 
     predictor = BaselinePredictor(BASELINE_DIR)
+    predictor.predict(SAMPLE_TEXT)
+
+    latencies = []
+    for _ in range(N_RUNS):
+        start = time.perf_counter()
+        predictor.predict(SAMPLE_TEXT)
+        latencies.append(time.perf_counter() - start)
+
+    p95 = float(np.percentile(latencies, 95))
+    assert p95 < 0.5
+
+
+def test_svm_p95_latency_under_500ms() -> None:
+    if (
+        not (BASELINE_DIR / "svm_model.joblib").exists()
+        or not (BASELINE_DIR / "svm_tfidf_vectorizer.joblib").exists()
+    ):
+        pytest.skip("SVM baseline artifact not present")
+    from aegis.serving.svm_predictor import SVMPredictor
+
+    predictor = SVMPredictor(BASELINE_DIR)
     predictor.predict(SAMPLE_TEXT)
 
     latencies = []

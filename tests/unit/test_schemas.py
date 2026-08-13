@@ -64,6 +64,35 @@ def test_predict_response_accepts_ood_result() -> None:
 
 
 @pytest.mark.unit
+def test_predict_response_accepts_svm_model() -> None:
+    resp = PredictResponse(
+        predicted_class="Business",
+        confidence=0.74,
+        model="svm",
+        ood=None,
+        latency_ms=2.1,
+        model_version="svm-linearsvc-v1",
+    )
+    assert resp.model == "svm"
+    assert resp.score_type == "probability"
+    assert resp.ood is None
+
+
+@pytest.mark.unit
+def test_predict_response_accepts_svm_relative_margin() -> None:
+    resp = PredictResponse(
+        predicted_class="Sports",
+        confidence=0.79,
+        score_type="relative_margin",
+        model="svm",
+        ood=None,
+        latency_ms=1.0,
+        model_version="svm-linearsvc-v1",
+    )
+    assert resp.score_type == "relative_margin"
+
+
+@pytest.mark.unit
 def test_predict_response_rejects_unknown_model_name() -> None:
     with pytest.raises(ValidationError):
         PredictResponse(

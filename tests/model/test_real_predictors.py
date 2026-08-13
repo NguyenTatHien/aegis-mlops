@@ -24,8 +24,19 @@ def _require_roberta() -> None:
 
 
 def _require_baseline() -> None:
-    if not (BASELINE_DIR / "logreg_model.joblib").exists():
+    if (
+        not (BASELINE_DIR / "logreg_model.joblib").exists()
+        or not (BASELINE_DIR / "logreg_tfidf_vectorizer.joblib").exists()
+    ):
         pytest.skip("baseline not trained yet")
+
+
+def _require_svm() -> None:
+    if (
+        not (BASELINE_DIR / "svm_model.joblib").exists()
+        or not (BASELINE_DIR / "svm_tfidf_vectorizer.joblib").exists()
+    ):
+        pytest.skip("SVM baseline artifact not present")
 
 
 def test_roberta_predictor_loads_offline_with_fast_tokenizer() -> None:
@@ -91,3 +102,33 @@ def test_baseline_predictor_logits_field_is_probability_vector() -> None:
     predictor = BaselinePredictor(BASELINE_DIR)
     result = predictor.predict("Stocks rallied on Tuesday amid strong earnings.")
     assert result.logits.sum() == pytest.approx(1.0, abs=1e-6)
+
+
+def test_svm_predictor_loads_and_predicts_with_margin_proxy() -> None:
+    _require_svm()
+    from aegis.serving.svm_predictor import SVMPredictor
+
+    predictor = SVMPredictor(BASELINE_DIR)
+    result = predictor.predict("Quarterly earnings beat analyst estimates by a wide margin.")
+    assert result.predicted_class in {"World", "Sports", "Business", "Sci/Tech"}
+    assert 0.0 <= result.confidence <= 1.0
+    assert result.logits.shape == (4,)
+    assert predictor.model.__class__.__name__ == "LinearSVC"
+
+
+def test_svm_uses_its_original_vectorizer_for_sports_regression() -> None:
+    """Guards against pairing the SVM weights with LogReg's 50k vocabulary.
+
+    Both matrices have the same shape, so a dimensionality check cannot catch
+    this failure: the mismatched pair predicts Business for this sports text.
+    """
+    _require_svm()
+    from aegis.serving.svm_predictor import SVMPredictor
+
+    predictor = SVMPredictor(BASELINE_DIR)
+    result = predictor.predict(
+        "The national football team secured a dramatic victory in extra time last night, "
+        "sending fans into celebration across the city."
+    )
+    assert result.predicted_class == "Sports"
+    assert result.confidence > 0.70

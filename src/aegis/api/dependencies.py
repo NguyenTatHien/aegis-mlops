@@ -12,13 +12,15 @@ from aegis.api.metrics import Metrics
 from aegis.api.schemas import ModelName
 from aegis.config import get_ood_config, get_settings
 from aegis.ood.base import OODDetector
-from aegis.ood.detector import build_detector
+from aegis.ood.detector import NullOODDetector, build_detector
 from aegis.serving.base import Predictor
 
 PredictorFactory = Callable[[], dict[str, Predictor]]
 
 # roberta_final's logits suit MSP/Energy; baseline's LogisticRegression only
 # has predict_proba, so it pairs with the entropy detector (design.md D4).
+# LinearSVC only exposes uncalibrated margins, so OOD is explicitly disabled
+# for that branch instead of presenting an invalid anomaly score.
 _METHOD_BY_MODEL: dict[str, str] = {"roberta": "energy", "baseline": "entropy"}
 
 
@@ -44,9 +46,11 @@ def default_predictor_factory() -> dict[str, Predictor]:
 
     from aegis.serving.baseline_predictor import BaselinePredictor
     from aegis.serving.roberta_predictor import RobertaPredictor
+    from aegis.serving.svm_predictor import SVMPredictor
 
     return {
         "baseline": BaselinePredictor(settings.baseline_dir),
+        "svm": SVMPredictor(settings.baseline_dir),
         "roberta": RobertaPredictor(settings.roberta_model_dir),
     }
 
@@ -66,8 +70,15 @@ def get_predictor(
 
 
 def get_ood_detector(predictor: Predictor = Depends(get_predictor)) -> OODDetector:
+    return build_ood_detector_for_model(predictor.name)
+
+
+def build_ood_detector_for_model(model_name: str) -> OODDetector:
+    """Build the valid detector for a model, or an explicit disabled detector."""
+    method = _METHOD_BY_MODEL.get(model_name)
+    if method is None:
+        return NullOODDetector()
     settings = get_settings()
-    method = _METHOD_BY_MODEL.get(predictor.name, "energy")
     return build_detector(method, get_ood_config(), ood_enabled=settings.ood_enabled)
 
 

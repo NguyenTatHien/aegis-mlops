@@ -13,15 +13,20 @@ from aegis.models.compare import (
 
 
 @pytest.mark.unit
-def test_build_model_comparison_has_both_models() -> None:
+def test_build_model_comparison_has_all_three_models() -> None:
     baseline_result = {"val_macro_f1": 0.9266, "test_macro_f1": 0.9249}
+    svm_result = {"val_macro_f1": 0.9237, "test_macro_f1": 0.9259}
     comparison = build_model_comparison(
-        baseline_result, roberta_val_f1=0.9511, roberta_test_f1=0.9517
+        baseline_result,
+        roberta_val_f1=0.9511,
+        roberta_test_f1=0.9517,
+        svm_result=svm_result,
     )
 
     models = {row["model"] for row in comparison}
     assert "RoBERTa-base" in models
     assert "TF-IDF + LogisticRegression" in models
+    assert "TF-IDF + Linear SVM" in models
     for row in comparison:
         assert "val_macro_f1" in row and "test_macro_f1" in row
 

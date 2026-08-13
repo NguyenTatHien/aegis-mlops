@@ -5,6 +5,11 @@
     "test_macro_f1": 0.9248699462307742
   },
   {
+    "model": "TF-IDF + Linear SVM",
+    "val_macro_f1": 0.9236907894878026,
+    "test_macro_f1": 0.9258930625496365
+  },
+  {
     "model": "RoBERTa-base",
     "val_macro_f1": 0.9510757917,
     "test_macro_f1": 0.9517386026

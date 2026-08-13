@@ -2,13 +2,23 @@
 
 Classifies news text into `World / Sports / Business / Sci-Tech` (AG News) and flags text that falls outside that domain (spam, ads, off-topic content) so it can be routed to a human reviewer instead of being force-classified.
 
-Two model branches behind one API — `roberta` (macro-F1 0.9517, default) and `baseline` TF-IDF+LogisticRegression (macro-F1 ~0.925, ~10x lower latency) — so the trade-off between them is a live, comparable feature, not just a table in a report. See [ARCHITECTURE.md](ARCHITECTURE.md) for why.
+Three trained model branches sit behind one API: `roberta` (macro-F1 0.9517, default), `baseline` TF-IDF+LogisticRegression (0.9249), and the team's original `svm` TF-IDF+LinearSVC (0.9259). The demo and Grafana compare all three live. SVM exposes a relative decision margin and intentionally has OOD disabled because it has no calibrated probabilities.
 
 ## Quickstart
 
 ### 1. Prepare artifacts
 
-Model artifacts (`roberta_final/`, `baseline/`, `ood_config.json`) live under `content/aegis_artifacts/` and are **not** committed to Git (too large — see `.gitignore`). If you don't already have them:
+Model artifacts live under `content/aegis_artifacts/` and are **not** committed to Git (too large — see `.gitignore`). A runnable artifact bundle must contain:
+
+```text
+content/aegis_artifacts/
+├── roberta_final/{config.json,model.safetensors,tokenizer.json,tokenizer_config.json}
+├── baseline/{logreg_tfidf_vectorizer.joblib,logreg_model.joblib,svm_tfidf_vectorizer.joblib,svm_model.joblib,baseline_results.json,svm_results.json}
+├── ood_config.json
+└── model_comparison.json
+```
+
+If you don't already have them:
 
 ```bash
 python -m venv .venv && source .venv/Scripts/activate   # Windows: .venv\Scripts\activate
@@ -28,7 +38,7 @@ docker compose up -d --build
 
 | Service | URL | What it is |
 |---|---|---|
-| API + demo page | http://localhost:8000/ | classify text, compare both models |
+| API + demo page | http://localhost:8000/ | classify text, compare all three models |
 | Swagger UI | http://localhost:8000/docs | interactive API docs |
 | MLflow | http://localhost:5001 | experiment tracking, model registry |
 | Prometheus | http://localhost:9090 | metrics, alert status |
@@ -83,4 +93,6 @@ Four kinds, matched to the course rubric:
 
 - OOD detection is calibrated against proxy datasets (`sms_spam`, `tweet_eval/hate`), not real production traffic — both proxies are short, informal text, while AG News is formal prose. `tests/model/test_ood_style_vs_domain.py` checks whether long, *formal* off-domain text (a recipe, a legal clause) is still caught; see that test's output for the current answer.
 - Recalibrating the OOD threshold trades recall for false-positive rate — see `content/aegis_artifacts/ood_operating_points.json` for the full sweep and `ARCHITECTURE.md` for the reasoning behind the chosen operating point.
+- LinearSVC has no `predict_proba`; the demo labels its softmax-normalized decision score as `relative margin`, records it in a separate Prometheus metric, and disables OOD for `model=svm`.
+- LogReg and SVM MUST use their own fitted TF-IDF vectorizers. Their matrices both have 50,000 columns but different vocabulary ordering, so the vectorizers are never interchangeable.
 - `/v1/explain` (LIME/SHAP token attribution) is a reserved endpoint, not yet implemented.

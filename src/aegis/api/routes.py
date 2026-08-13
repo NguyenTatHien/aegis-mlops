@@ -56,6 +56,7 @@ def _run_predict(
         status_code=200,
         predicted_class=result.predicted_class,
         confidence=result.confidence,
+        score_type=result.score_type,
         latency_seconds=latency_seconds,
         inference_seconds=inference_seconds,
         text_word_count=len(text.split()),
@@ -67,6 +68,7 @@ def _run_predict(
     return PredictResponse(
         predicted_class=result.predicted_class,
         confidence=result.confidence,
+        score_type=result.score_type,  # type: ignore[arg-type]
         model=predictor.name,  # type: ignore[arg-type]
         ood=ood_result,
         latency_ms=latency_seconds * 1000,
@@ -79,9 +81,9 @@ def _run_predict(
     response_model=PredictResponse,
     summary="Classify a news text",
     description=(
-        "Runs the selected model branch (baseline TF-IDF+LogReg or RoBERTa) and returns "
-        "the predicted class with a confidence score. When OOD_ENABLED, also flags whether "
-        "the text falls outside the AG News training domain."
+        "Runs the selected model branch (TF-IDF+LogReg, TF-IDF+LinearSVC, or RoBERTa) "
+        "and returns the predicted class with a confidence score. SVM confidence is an "
+        "uncalibrated margin proxy and OOD is disabled for that branch."
     ),
     responses={422: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
 )

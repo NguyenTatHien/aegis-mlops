@@ -1,0 +1,8 @@
+{
+  "best_c": 0.3,
+  "val_macro_f1": 0.9236907894878026,
+  "test_macro_f1": 0.9258930625496365,
+  "model": "TF-IDF + Linear SVM",
+  "score_type": "uncalibrated relative margin",
+  "ood_supported": false
+}
