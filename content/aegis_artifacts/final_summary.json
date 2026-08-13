@@ -1,0 +1,29 @@
+{
+  "model_comparison": [
+    {
+      "model": "TF-IDF + Linear SVM",
+      "val_macro_f1": 0.9236907894878026,
+      "test_macro_f1": 0.9258930625496365
+    },
+    {
+      "model": "RoBERTa-base",
+      "val_macro_f1": 0.951075791650752,
+      "test_macro_f1": 0.9517386025589567
+    }
+  ],
+  "roberta_test_macro_f1": 0.9517386025589567,
+  "ood_comparison": [
+    {
+      "method": "MSP",
+      "auroc": 0.8025928023701638,
+      "ood_recall": 0.904635761589404,
+      "fpr": 0.41342105263157897
+    },
+    {
+      "method": "Energy",
+      "auroc": 0.8586777622865109,
+      "ood_recall": 0.8883002207505519,
+      "fpr": 0.3501315789473684
+    }
+  ]
+}

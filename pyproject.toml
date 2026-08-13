@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aegis"
+version = "0.1.0"
+description = "Aegis — News Routing & OOD Detection (AG News)"
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = ["notebooks", "content", "openspec"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's Depends()/Query() as argument defaults are the framework's
+# documented DI pattern (evaluated per-request by FastAPI, not once at
+# def-time) — not the mutable-default footgun B008 exists to catch.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = true
+exclude = ["notebooks/", "content/", "openspec/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "unit: pure-function and contract tests, no model, no network",
+    "integration: API tests through TestClient, MockPredictor allowed",
+    "data: dataset quality tests, requires AG News cached locally",
+    "model: full-model validation tests, requires real RoBERTa/baseline artifacts",
+    "slow: long-running tests excluded from default CI",
+]
+addopts = "--strict-markers"
+
+[tool.coverage.run]
+source = ["src/aegis"]
+# These are exercised for real by tests/model (real RoBERTa/baseline
+# artifacts) and tests/data (real AG News network calls), not by the
+# "unit or integration" job this gate applies to — see design.md D11.
+# Confirmed covered separately, not just excused: tests/model/test_real_predictors.py
+# and tests/data/test_data_quality.py's ag_news_raw-fixtured tests.
+omit = [
+    "src/aegis/api/static/*",
+    "src/aegis/serving/roberta_predictor.py",
+    "src/aegis/serving/baseline_predictor.py",
+    "src/aegis/serving/mlflow_predictor.py",
+    "src/aegis/data/loader.py",
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    'if __name__ == "__main__":',
+]
+
+[tool.bandit]
+exclude_dirs = ["tests", "notebooks", ".venv"]

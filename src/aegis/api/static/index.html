@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Aegis — News Routing</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --border: #262b36; --text: #e6e8ec; --muted: #9aa3b2;
+    --accent: #4f8cff; --good: #2ecc71; --warn: #f4b942; --bad: #e05a5a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2rem 1rem; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif; display: flex; justify-content: center;
+  }
+  main { width: 100%; max-width: 780px; }
+  h1 { font-size: 1.4rem; margin: 0 0 .25rem; }
+  .subtitle { color: var(--muted); font-size: .9rem; margin-bottom: 1.5rem; }
+  .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1rem; }
+  textarea {
+    width: 100%; min-height: 110px; background: #0d0f13; color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: .75rem; font-size: .95rem; resize: vertical;
+  }
+  .row { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-top: .75rem; }
+  .model-choice label { margin-right: 1rem; cursor: pointer; color: var(--muted); }
+  .model-choice input { margin-right: .35rem; }
+  button {
+    background: var(--accent); color: white; border: none; border-radius: 8px; padding: .6rem 1.1rem;
+    font-size: .9rem; cursor: pointer;
+  }
+  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .samples { margin-top: .5rem; }
+  .samples button { margin-right: .5rem; margin-top: .5rem; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: 1rem; }
+  .result-box { border: 1px solid var(--border); border-radius: 8px; padding: .9rem; }
+  .result-box h3 { margin: 0 0 .5rem; font-size: .85rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .label-big { font-size: 1.3rem; font-weight: 600; }
+  .confidence-bar-track { background: #0d0f13; border-radius: 6px; height: 8px; margin-top: .5rem; overflow: hidden; }
+  .confidence-bar-fill { background: var(--accent); height: 100%; }
+  .meta { color: var(--muted); font-size: .8rem; margin-top: .5rem; }
+  .badge { display: inline-block; padding: .2rem .55rem; border-radius: 999px; font-size: .78rem; font-weight: 600; }
+  .badge.clear { background: rgba(46,204,113,.15); color: var(--good); }
+  .badge.ood { background: rgba(224,90,90,.18); color: var(--bad); }
+  .badge.disabled { background: rgba(244,185,66,.15); color: var(--warn); }
+  .error-banner {
+    background: rgba(224,90,90,.15); border: 1px solid var(--bad); color: #ffb4b4;
+    border-radius: 8px; padding: .75rem 1rem; margin-bottom: 1rem; font-size: .9rem; display: none;
+  }
+  .footer-note { color: var(--muted); font-size: .78rem; margin-top: 1.5rem; }
+  #classes-line { color: var(--muted); font-size: .8rem; margin-top: .5rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Aegis — News Routing &amp; OOD Detection</h1>
+  <p class="subtitle">Live demo of the classifier serving API. Every number below comes from <code>/v1/predict</code> and <code>/v1/model/info</code> — nothing is computed in this page.</p>
+
+  <div id="error-banner" class="error-banner"></div>
+
+  <div class="card">
+    <textarea id="text-input" placeholder="Paste a news article, or click a sample below…"></textarea>
+    <div id="classes-line">Classes: loading…</div>
+    <div class="row model-choice">
+      <label><input type="radio" name="model" value="roberta" checked /> RoBERTa (default)</label>
+      <label><input type="radio" name="model" value="baseline" /> TF-IDF + LogReg</label>
+      <button id="classify-btn">Classify</button>
+      <button id="compare-btn" class="secondary">Compare both models</button>
+    </div>
+    <div class="samples">
+      <button class="secondary" data-sample="news">Sample: real news</button>
+      <button class="secondary" data-sample="spam">Sample: spam/ad (likely OOD)</button>
+    </div>
+  </div>
+
+  <div class="result-grid" id="result-grid" style="display:none;">
+    <div class="result-box" id="box-roberta">
+      <h3>roberta</h3>
+      <div class="label-big">—</div>
+      <div class="confidence-bar-track"><div class="confidence-bar-fill" style="width:0%"></div></div>
+      <div class="meta">—</div>
+    </div>
+    <div class="result-box" id="box-baseline">
+      <h3>baseline</h3>
+      <div class="label-big">—</div>
+      <div class="confidence-bar-track"><div class="confidence-bar-fill" style="width:0%"></div></div>
+      <div class="meta">—</div>
+    </div>
+  </div>
+
+  <p class="footer-note">Model info, label names, and OOD thresholds are fetched from the API at load time — this page has no hardcoded knowledge of them.</p>
+</main>
+
+<script>
+(function () {
+  const API_BASE = "";
+  const textInput = document.getElementById("text-input");
+  const classifyBtn = document.getElementById("classify-btn");
+  const compareBtn = document.getElementById("compare-btn");
+  const errorBanner = document.getElementById("error-banner");
+  const resultGrid = document.getElementById("result-grid");
+  const classesLine = document.getElementById("classes-line");
+
+  const SAMPLES = {
+    news: "The national football team secured a dramatic victory in extra time last night, sending fans into celebration across the city.",
+    spam: "CLICK HERE NOW!!! You've been selected to WIN a FREE iPhone! Limited time offer, act now before it's gone, buy today!!!",
+  };
+
+  function showError(message) {
+    errorBanner.textContent = message;
+    errorBanner.style.display = "block";
+  }
+  function clearError() {
+    errorBanner.style.display = "none";
+    errorBanner.textContent = "";
+  }
+
+  function selectedModel() {
+    return document.querySelector('input[name="model"]:checked').value;
+  }
+
+  async function loadModelInfo() {
+    try {
+      const resp = await fetch(`${API_BASE}/v1/model/info?model=roberta`);
+      if (!resp.ok) throw new Error(`status ${resp.status}`);
+      const info = await resp.json();
+      classesLine.textContent = `Classes: ${info.label_names.join(", ")}`;
+    } catch (err) {
+      classesLine.textContent = "Classes: unavailable (could not reach /v1/model/info)";
+    }
+  }
+
+  function renderOodBadge(container, ood) {
+    let badge = container.querySelector(".ood-badge");
+    if (badge) badge.remove();
+    badge = document.createElement("span");
+    badge.className = "badge ood-badge";
+    if (ood === null || ood === undefined) {
+      badge.classList.add("disabled");
+      badge.textContent = "OOD: disabled";
+    } else if (ood.is_ood) {
+      badge.classList.add("ood");
+      badge.textContent = `OOD: flagged (${ood.method}, score ${ood.score.toFixed(3)})`;
+    } else {
+      badge.classList.add("clear");
+      badge.textContent = `OOD: clear (${ood.method})`;
+    }
+    container.appendChild(badge);
+  }
+
+  function renderResult(boxId, result) {
+    const box = document.getElementById(boxId);
+    box.querySelector(".label-big").textContent = result.predicted_class;
+    box.querySelector(".confidence-bar-fill").style.width = `${(result.confidence * 100).toFixed(1)}%`;
+    box.querySelector(".meta").innerHTML =
+      `confidence ${(result.confidence * 100).toFixed(1)}% · ${result.latency_ms.toFixed(1)}ms · ${result.model_version}`;
+    renderOodBadge(box, result.ood);
+  }
+
+  async function classifyOne(model) {
+    const text = textInput.value;
+    const resp = await fetch(`${API_BASE}/v1/predict?model=${encodeURIComponent(model)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!resp.ok) {
+      const body = await resp.json().catch(() => ({}));
+      if (resp.status === 503) {
+        throw new Error("Model is still starting up — try again in a few seconds.");
+      }
+      if (resp.status === 422) {
+        throw new Error(body.detail || "Invalid input.");
+      }
+      throw new Error(`${body.error || "error"} (request_id: ${body.request_id || "n/a"})`);
+    }
+    return resp.json();
+  }
+
+  async function handleClassify(bothModels) {
+    clearError();
+    const text = textInput.value.trim();
+    if (!text) {
+      showError("Please enter some text before classifying.");
+      return;
+    }
+    classifyBtn.disabled = true;
+    compareBtn.disabled = true;
+    try {
+      resultGrid.style.display = "grid";
+      if (bothModels) {
+        const [roberta, baseline] = await Promise.all([classifyOne("roberta"), classifyOne("baseline")]);
+        renderResult("box-roberta", roberta);
+        renderResult("box-baseline", baseline);
+      } else {
+        const model = selectedModel();
+        const result = await classifyOne(model);
+        renderResult(model === "roberta" ? "box-roberta" : "box-baseline", result);
+      }
+    } catch (err) {
+      showError(err.message || String(err));
+    } finally {
+      classifyBtn.disabled = false;
+      compareBtn.disabled = false;
+    }
+  }
+
+  classifyBtn.addEventListener("click", () => handleClassify(false));
+  compareBtn.addEventListener("click", () => handleClassify(true));
+
+  document.querySelectorAll("[data-sample]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      textInput.value = SAMPLES[btn.dataset.sample];
+      clearError();
+    });
+  });
+
+  loadModelInfo();
+})();
+</script>
+</body>
+</html>

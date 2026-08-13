@@ -1,0 +1,22 @@
+{
+  "msp_threshold": 0.0973578714028861,
+  "energy_threshold": -4.313697454571079,
+  "energy_temperature": 1.0,
+  "label_names": [
+    "World",
+    "Sports",
+    "Business",
+    "Sci/Tech"
+  ],
+  "max_len": 128,
+  "target_fpr": 0.05,
+  "measured_fpr": {
+    "msp": 0.05368421052631579,
+    "energy": 0.05539473684210526
+  },
+  "measured_recall": {
+    "msp": 0.24326710816777042,
+    "energy": 0.3911699779249448
+  },
+  "calibrated_at": "2026-08-12T18:58:10.505182+00:00"
+}

@@ -1,0 +1,61 @@
+# Documented risk acceptance — reviewed 2026-08-13, aegis-api:ci image.
+# Every entry here has a released fix (so `ignore-unfixed: true` in ci.yml
+# doesn't already exclude it); each is skipped for a specific, checked
+# reason below, not blanket-suppressed. Re-run `trivy image --severity
+# HIGH,CRITICAL aegis-api:ci` without this file to see the full raw list.
+
+# --- mlflow: fix requires the 3.x major line ---
+# All fixed versions below are mlflow>=3.0 (we're pinned to 2.22.4). The
+# vulnerable code paths are in the MLflow TRACKING SERVER (model-serving
+# RCE, artifact-handler path traversal, auth bypass, SSRF, temp-file/
+# credential handling) — that server runs in the separate `mlflow`
+# container (ghcr.io/mlflow/mlflow:v2.22.0), not in aegis-api. This image
+# only has the mlflow *client* library installed (mlflow.set_tracking_uri,
+# mlflow.sklearn.load_model) for MODEL_SOURCE=registry — it never runs
+# `mlflow server`, so these request-handler vulnerabilities have no
+# reachable code path here. Upgrading to mlflow 3.x untested this late
+# risks breaking the Model Registry integration verified working in
+# task 8.7 (mlflow.sklearn.log_model signature, MlflowClient API changed
+# between 2.x and 3.x) — deferred as a follow-up, not silently dropped.
+CVE-2025-15036
+CVE-2025-15379
+CVE-2026-0596
+CVE-2026-2635
+CVE-2026-2651
+CVE-2026-4035
+CVE-2025-10279
+CVE-2025-14279
+CVE-2025-14287
+CVE-2025-15031
+CVE-2026-2033
+CVE-2026-2393
+CVE-2026-2614
+CVE-2026-2652
+CVE-2026-4137
+
+# --- pyarrow: transitive via datasets==3.6.0, fix needs a major bump ---
+# 19.0.1 -> 23.0.1 is outside the range datasets==3.6.0 was tested
+# against; the CVE is a DoS (use-after-free) in Arrow's C++ engine, not
+# a code-execution path reachable from our API surface.
+CVE-2026-25087
+
+# --- starlette: transitive via fastapi==0.121.2, fix needs 0.x -> 1.x ---
+# CVE-2026-54283 (form() limits DoS): fastapi pins starlette in its own
+# compatible range; bumping independently risks breaking fastapi's request
+# handling untested this late.
+# CVE-2026-48818 (StaticFiles UNC-path SSRF/credential theft): Windows-only
+# attack vector (UNC paths, \\server\share) — this image runs on Linux
+# (python:3.11-slim), where UNC paths aren't a meaningful OS concept, so
+# this specific CVE has no exploitable path in this deployment regardless.
+CVE-2026-54283
+CVE-2026-48818
+
+# --- build-time-only tooling, never invoked by API request handling ---
+# wheel 0.45.1: a leftover copy from pip's build-isolation step (we pin
+# wheel==0.46.2 in requirements.txt; this is a second, vendored instance),
+# not the one used to install our dependencies at runtime.
+CVE-2026-24049
+# jaraco.context 5.3.0: vendored inside setuptools/_vendor/, a build-time
+# packaging dependency — the path-traversal-via-tar-archive CVE requires
+# calling jaraco.context's tar extraction, which nothing in aegis-api does.
+CVE-2026-23949

@@ -1,0 +1,42 @@
+[
+  {
+    "text": "The national football team secured a dramatic victory in extra time last night.",
+    "predicted_class": "Sports",
+    "confidence": 0.999785
+  },
+  {
+    "text": "Stocks rallied on Tuesday after strong quarterly earnings from major banks.",
+    "predicted_class": "Business",
+    "confidence": 0.998448
+  },
+  {
+    "text": "Scientists unveiled a new processor chip with record-breaking performance.",
+    "predicted_class": "Sci/Tech",
+    "confidence": 0.979512
+  },
+  {
+    "text": "World leaders gathered at the summit to discuss the ongoing diplomatic crisis.",
+    "predicted_class": "World",
+    "confidence": 0.99667
+  },
+  {
+    "text": "The basketball championship drew record television audiences this year.",
+    "predicted_class": "Sports",
+    "confidence": 0.48899
+  },
+  {
+    "text": "The central bank raised interest rates to combat inflation pressures.",
+    "predicted_class": "Business",
+    "confidence": 0.9748
+  },
+  {
+    "text": "Researchers published a breakthrough study on quantum computing efficiency.",
+    "predicted_class": "Sci/Tech",
+    "confidence": 0.98821
+  },
+  {
+    "text": "The United Nations issued a statement on the regional conflict.",
+    "predicted_class": "World",
+    "confidence": 0.997171
+  }
+]

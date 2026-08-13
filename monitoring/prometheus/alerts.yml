@@ -1,0 +1,53 @@
+groups:
+  - name: aegis-alerts
+    rules:
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, sum(rate(prediction_latency_seconds_bucket[5m])) by (le, model)) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 prediction latency above 500ms for {{ $labels.model }}"
+          description: "Committed success metric: latency < 500ms/request (MLOps.docx, System Level)."
+
+      - alert: HighErrorRate
+        expr: |
+          (sum(rate(http_request_errors_total[5m])) / clamp_min(sum(rate(prediction_requests_total[5m])), 1)) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HTTP error rate above 1%"
+          description: "Committed success metric: error rate < 1% (MLOps.docx, System Level)."
+
+      - alert: APIDown
+        expr: up{job="aegis-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Aegis API scrape target is down"
+
+      - alert: LowConfidence
+        expr: histogram_quantile(0.5, sum(rate(prediction_confidence_bucket[10m])) by (le, model)) < 0.7
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Median prediction confidence below 0.7 for {{ $labels.model }} — possible model degradation"
+
+      # Recalibrated 2026-08-12 (scripts/recalibrate_ood.py --target-fpr 0.05):
+      # Energy measured_fpr=0.0554, MSP measured_fpr=0.0537 on the held-out
+      # OOD test set (content/aegis_artifacts/ood_operating_points.json).
+      # Threshold set to ~3x the calibrated baseline FPR so normal statistical
+      # variation around ~5.5% doesn't page anyone — this catches genuine
+      # spikes (drift, an actual spam wave), not routine noise.
+      - alert: OODSpike
+        expr: |
+          (sum(rate(ood_detected_total[5m])) by (model) / clamp_min(sum(rate(prediction_requests_total[5m])) by (model), 1)) > 0.15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "OOD rate spike for {{ $labels.model }}"
+          description: "OOD rate exceeds 15%, well above the calibrated baseline (~5.5%) — investigate for domain drift or a spam wave."

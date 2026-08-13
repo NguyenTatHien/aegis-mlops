@@ -1,0 +1,81 @@
+{
+  "id": null,
+  "uid": "aegis-overview",
+  "title": "Aegis — News Routing & OOD",
+  "tags": ["aegis"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    { "id": 1, "type": "row", "title": "System", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "collapsed": false },
+
+    {
+      "id": 2, "type": "timeseries", "title": "Requests per second",
+      "gridPos": { "h": 7, "w": 6, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(prediction_requests_total[1m])) by (endpoint)", "legendFormat": "{{endpoint}}" }]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "p95 Latency by model (SLO: 500ms)",
+      "gridPos": { "h": 7, "w": 6, "x": 6, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.5 }] } }, "overrides": [] },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(prediction_latency_seconds_bucket[5m])) by (le, model))", "legendFormat": "{{model}}" }]
+    },
+    {
+      "id": 4, "type": "stat", "title": "Error rate",
+      "gridPos": { "h": 7, "w": 6, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.01 }] } }, "overrides": [] },
+      "targets": [{ "expr": "sum(rate(http_request_errors_total[5m])) / clamp_min(sum(rate(prediction_requests_total[5m])), 1)" }]
+    },
+    {
+      "id": 5, "type": "stat", "title": "API up",
+      "gridPos": { "h": 7, "w": 6, "x": 18, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "mappings": [{ "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }] }, "overrides": [] },
+      "targets": [{ "expr": "up{job=\"aegis-api\"}" }]
+    },
+
+    { "id": 6, "type": "row", "title": "ML", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 8 }, "collapsed": false },
+
+    {
+      "id": 7, "type": "timeseries", "title": "Predictions by class",
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(predictions_by_class_total[5m])) by (predicted_class, model)", "legendFormat": "{{model}} — {{predicted_class}}" }]
+    },
+    {
+      "id": 8, "type": "heatmap", "title": "Confidence distribution",
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "sum(rate(prediction_confidence_bucket[5m])) by (le)", "format": "heatmap" }]
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "OOD rate (with alert threshold)",
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "thresholds": { "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 0.45 }] }, "custom": { "thresholdsStyle": { "mode": "line" } } }, "overrides": [] },
+      "targets": [{ "expr": "ood_rate", "legendFormat": "{{model}}" }]
+    },
+
+    { "id": 10, "type": "row", "title": "Model Info", "gridPos": { "h": 1, "w": 24, "x": 0, "y": 16 }, "collapsed": false },
+
+    {
+      "id": 11, "type": "table", "title": "Serving models",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 17 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "model_info", "format": "table", "instant": true }]
+    },
+    {
+      "id": 12, "type": "stat", "title": "OOD detection status",
+      "description": "Explicit ENABLED/DISABLED — never a blank panel implying no data.",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 17 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "mappings": [{ "type": "value", "options": { "0": { "text": "DISABLED", "color": "yellow" }, "1": { "text": "ENABLED", "color": "green" } } }] }, "overrides": [] },
+      "targets": [{ "expr": "ood_enabled", "legendFormat": "{{model}}" }]
+    }
+  ]
+}

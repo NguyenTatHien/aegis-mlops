@@ -1,0 +1,20 @@
+# See CONTRIBUTING.md for full role descriptions.
+# Update the usernames below once the team is on GitHub — placeholders for now.
+
+/src/aegis/data/          @member1-data-ml
+/src/aegis/models/        @member1-data-ml
+/src/aegis/ood/           @member1-data-ml
+
+/src/aegis/serving/       @member2-mlops
+/scripts/backfill_mlflow.py @member2-mlops
+/scripts/recalibrate_ood.py @member1-data-ml @member2-mlops
+
+/src/aegis/api/           @member3-backend
+/src/aegis/api/static/    @member3-backend
+
+/docker/                  @member4-devops
+/docker-compose.yml       @member4-devops
+/.github/workflows/       @member4-devops
+/monitoring/              @member5-qa @member4-devops
+
+/tests/                   @member5-qa

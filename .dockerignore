@@ -1,0 +1,40 @@
+# Model artifacts and heavy research assets — never enter the build context.
+# MODEL_SOURCE=local mounts content/aegis_artifacts as a read-only volume
+# instead of baking it into the image (design.md D9).
+content/
+roberta_checkpoints/
+*.zip
+*.safetensors
+*.joblib
+*.npy
+
+notebooks/
+*.ipynb
+
+.git/
+.github/
+.omc/
+.agent/
+openspec/
+
+tests/
+docs/
+*.docx
+~$*.docx
+
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage*
+coverage.xml
+
+.env
+.env.local
+data/cache/
+mlruns/
+mlflow.db

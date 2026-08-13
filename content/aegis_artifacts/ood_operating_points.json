@@ -1,0 +1,156 @@
+[
+  {
+    "method": "msp",
+    "target_fpr": 0.01,
+    "threshold": 0.3748891874054513,
+    "val_fpr": 0.009916666666666667,
+    "val_recall": 0.07328918322295806,
+    "measured_fpr": 0.0125,
+    "measured_recall": 0.06578366445916115,
+    "val_auroc": 0.8056821559970567,
+    "test_auroc": 0.8025611130475195
+  },
+  {
+    "method": "msp",
+    "target_fpr": 0.02,
+    "threshold": 0.26479904930966336,
+    "val_fpr": 0.019916666666666666,
+    "val_recall": 0.1271523178807947,
+    "measured_fpr": 0.02223684210526316,
+    "measured_recall": 0.12141280353200883,
+    "val_auroc": 0.8056821559970567,
+    "test_auroc": 0.8025611130475195
+  },
+  {
+    "method": "msp",
+    "target_fpr": 0.05,
+    "threshold": 0.0973578714028861,
+    "val_fpr": 0.0495,
+    "val_recall": 0.24856512141280354,
+    "measured_fpr": 0.05368421052631579,
+    "measured_recall": 0.24326710816777042,
+    "val_auroc": 0.8056821559970567,
+    "test_auroc": 0.8025611130475195
+  },
+  {
+    "method": "msp",
+    "target_fpr": 0.1,
+    "threshold": 0.02984227824047936,
+    "val_fpr": 0.09975,
+    "val_recall": 0.3805739514348786,
+    "measured_fpr": 0.10394736842105264,
+    "measured_recall": 0.3836644591611479,
+    "val_auroc": 0.8056821559970567,
+    "test_auroc": 0.8025611130475195
+  },
+  {
+    "method": "msp",
+    "target_fpr": 0.15,
+    "threshold": 0.01438248755235938,
+    "val_fpr": 0.14825,
+    "val_recall": 0.4785871964679912,
+    "measured_fpr": 0.15223684210526317,
+    "measured_recall": 0.47726269315673286,
+    "val_auroc": 0.8056821559970567,
+    "test_auroc": 0.8025611130475195
+  },
+  {
+    "method": "msp",
+    "target_fpr": 0.2,
+    "threshold": 0.008126228403869562,
+    "val_fpr": 0.2,
+    "val_recall": 0.5620309050772627,
+    "measured_fpr": 0.20276315789473684,
+    "measured_recall": 0.5602649006622517,
+    "val_auroc": 0.8056821559970567,
+    "test_auroc": 0.8025611130475195
+  },
+  {
+    "method": "msp",
+    "target_fpr": 0.3,
+    "threshold": 0.00333098683025701,
+    "val_fpr": 0.29941666666666666,
+    "val_recall": 0.7183222958057395,
+    "measured_fpr": 0.30815789473684213,
+    "measured_recall": 0.717439293598234,
+    "val_auroc": 0.8056821559970567,
+    "test_auroc": 0.8025611130475195
+  },
+  {
+    "method": "energy",
+    "target_fpr": 0.01,
+    "threshold": -3.5396150707815637,
+    "val_fpr": 0.009833333333333333,
+    "val_recall": 0.21986754966887417,
+    "measured_fpr": 0.010526315789473684,
+    "measured_recall": 0.21015452538631346,
+    "val_auroc": 0.8610717071376013,
+    "test_auroc": 0.8586606250726153
+  },
+  {
+    "method": "energy",
+    "target_fpr": 0.02,
+    "threshold": -3.8590295121540334,
+    "val_fpr": 0.02,
+    "val_recall": 0.28167770419426047,
+    "measured_fpr": 0.020526315789473684,
+    "measured_recall": 0.28344370860927154,
+    "val_auroc": 0.8610717071376013,
+    "test_auroc": 0.8586606250726153
+  },
+  {
+    "method": "energy",
+    "target_fpr": 0.05,
+    "threshold": -4.313697454571079,
+    "val_fpr": 0.04958333333333333,
+    "val_recall": 0.39514348785871967,
+    "measured_fpr": 0.05539473684210526,
+    "measured_recall": 0.3911699779249448,
+    "val_auroc": 0.8610717071376013,
+    "test_auroc": 0.8586606250726153
+  },
+  {
+    "method": "energy",
+    "target_fpr": 0.1,
+    "threshold": -4.848021251228485,
+    "val_fpr": 0.1,
+    "val_recall": 0.5337748344370861,
+    "measured_fpr": 0.10328947368421053,
+    "measured_recall": 0.5355408388520971,
+    "val_auroc": 0.8610717071376013,
+    "test_auroc": 0.8586606250726153
+  },
+  {
+    "method": "energy",
+    "target_fpr": 0.15,
+    "threshold": -5.146902422301752,
+    "val_fpr": 0.1495,
+    "val_recall": 0.636644591611479,
+    "measured_fpr": 0.15394736842105264,
+    "measured_recall": 0.6335540838852097,
+    "val_auroc": 0.8610717071376013,
+    "test_auroc": 0.8586606250726153
+  },
+  {
+    "method": "energy",
+    "target_fpr": 0.2,
+    "threshold": -5.338094894768804,
+    "val_fpr": 0.19891666666666666,
+    "val_recall": 0.7125827814569536,
+    "measured_fpr": 0.2026315789473684,
+    "measured_recall": 0.7134657836644591,
+    "val_auroc": 0.8610717071376013,
+    "test_auroc": 0.8586606250726153
+  },
+  {
+    "method": "energy",
+    "target_fpr": 0.3,
+    "threshold": -5.595231687866543,
+    "val_fpr": 0.3,
+    "val_recall": 0.8419426048565122,
+    "measured_fpr": 0.30289473684210527,
+    "measured_recall": 0.8459161147902869,
+    "val_auroc": 0.8610717071376013,
+    "test_auroc": 0.8586606250726153
+  }
+]

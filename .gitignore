@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Model artifacts — too large for Git, fetched/generated separately
+roberta_checkpoints/
+roberta_final/
+baseline/*.joblib
+*.safetensors
+*.joblib
+*.npy
+*.zip
+aegis_artifacts.zip
+content/aegis_artifacts/roberta_checkpoints/
+
+# Data
+data/cache/
+data/*.jsonl
+*.parquet
+
+# Env / secrets
+.env
+.env.local
+
+# MLflow local runs (compose uses a named volume instead)
+mlruns/
+mlflow.db
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# OpenSpec / OMC operational state (kept local)
+.omc/
+.agent/
+
+# Office lock files
+~$*.docx
+
+# Transient test output
+tests/fixtures/last_compose_smoke.log
+
+# Local tooling / assistant config (not part of the project)
+.claude/
