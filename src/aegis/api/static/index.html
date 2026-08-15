@@ -65,7 +65,23 @@
     transition: background-color 0.5s ease, color 0.5s ease;
   }
 
-  main { width: 100%; max-width: 1080px; position: relative; }
+  main { width: 100%; max-width: 1400px; position: relative; }
+
+  /* Two-column workspace: input on the left, results + OOD history on the
+     right. The left column sticks so the textarea stays visible while the
+     (potentially long) OOD history table scrolls past on the right. */
+  .app-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .app-col-left { position: sticky; top: 1rem; min-width: 0; }
+  .app-col-right { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+  /* Inside the right column the result grid / history are siblings, so drop
+     their standalone top margins — the column gap already separates them. */
+  .app-col-right > .result-grid { margin-top: 0; }
+  .app-col-right > .history-card { margin-top: 0; }
 
   .theme-toggle {
     position: absolute;
@@ -323,12 +339,25 @@
   }
 
   .meta-stats {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--border);
   }
+  /* Each stat stacks its label (chữ) above its value (số liệu) — two stats
+     sit side by side inside .meta-stats. */
+  .stat { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+  .stat-label {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .stat-value { color: var(--text); font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; }
+  .stat-version { color: var(--muted); font-size: 0.78rem; opacity: 0.7; }
 
   .badge {
     display: inline-flex;
@@ -500,6 +529,11 @@
   ::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.3); border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.5); }
 
+  @media (max-width: 1024px) {
+    .app-grid { grid-template-columns: 1fr; }
+    .app-col-left { position: static; }
+    .app-col-right > .result-grid { margin-top: 2rem; }
+  }
   @media (max-width: 768px) {
     .result-grid { grid-template-columns: 1fr; }
     h1 { font-size: 2.2rem; }
@@ -554,89 +588,94 @@
 
   <div id="error-banner" class="error-banner"></div>
 
-  <div class="card">
-    <div class="article-editor">
-      <input type="text" id="title-input" placeholder="Article Title (Optional)" />
-      <textarea id="text-input" placeholder="Paste the news article body here, or click a sample below…"></textarea>
-    </div>
+  <div class="app-grid">
+    <div class="app-col-left">
+      <div class="card">
+        <div class="article-editor">
+          <input type="text" id="title-input" placeholder="Article Title (Optional)" />
+          <textarea id="text-input" placeholder="Paste the news article body here, or click a sample below…"></textarea>
+        </div>
 
-    <div id="classes-line">Classes: loading…</div>
+        <div id="classes-line">Classes: loading…</div>
 
-    <div class="controls-row">
-      <div class="model-choice">
-        <label><input type="radio" name="model" value="roberta" checked /> RoBERTa (default)</label>
-        <label><input type="radio" name="model" value="svm" /> TF-IDF + LinearSVC</label>
+        <div class="controls-row">
+          <div class="model-choice">
+            <label><input type="radio" name="model" value="roberta" checked /> RoBERTa (default)</label>
+            <label><input type="radio" name="model" value="svm" /> TF-IDF + LinearSVC</label>
+          </div>
+          <button id="classify-btn">Classify</button>
+          <button id="compare-btn" class="secondary">Compare both models</button>
+        </div>
+
+        <p class="model-note"><strong>SVM note:</strong> its relative margin is a softmax-normalized decision score, not a calibrated probability; OOD is therefore disabled for this branch.</p>
+
+        <div class="samples">
+          <button class="secondary" data-sample="news">Sample: real news</button>
+          <button class="secondary" data-sample="spam">Sample: spam/ad (likely OOD)</button>
+        </div>
       </div>
-      <button id="classify-btn">Classify</button>
-      <button id="compare-btn" class="secondary">Compare both models</button>
     </div>
+    <div class="app-col-right">
+      <div class="result-grid" id="result-grid">
+        <div class="result-box" id="box-roberta">
+          <h3>RoBERTa</h3>
+          <div class="label-big">—</div>
+          <div class="confidence-bar-track"><div class="confidence-bar-fill" style="width:0%"></div></div>
+          <div class="meta">
+            <div class="meta-stats">
+              <div class="stat"><span class="stat-label">—</span><strong class="stat-value">—</strong></div>
+              <div class="stat"><span class="stat-label">—</span><span class="stat-value">—</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="result-box" id="box-svm">
+          <h3>SVM · LinearSVC</h3>
+          <div class="label-big">—</div>
+          <div class="confidence-bar-track"><div class="confidence-bar-fill" style="width:0%"></div></div>
+          <div class="meta">
+            <div class="meta-stats">
+              <div class="stat"><span class="stat-label">—</span><strong class="stat-value">—</strong></div>
+              <div class="stat"><span class="stat-label">—</span><span class="stat-value">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <p class="model-note"><strong>SVM note:</strong> its relative margin is a softmax-normalized decision score, not a calibrated probability; OOD is therefore disabled for this branch.</p>
-
-    <div class="samples">
-      <button class="secondary" data-sample="news">Sample: real news</button>
-      <button class="secondary" data-sample="spam">Sample: spam/ad (likely OOD)</button>
+      <section class="card history-card" id="ood-history" aria-labelledby="ood-history-title">
+        <div class="history-header">
+          <div class="history-title-wrap">
+            <span class="history-signal" aria-hidden="true"></span>
+            <div>
+              <h2 id="ood-history-title">OOD review history</h2>
+              <p>Flagged predictions are stored only in this browser using IndexedDB. They survive refreshes and are never sent back to the server.</p>
+            </div>
+          </div>
+          <div class="history-actions">
+            <span class="history-count" id="history-count">0 flagged</span>
+            <button class="danger" id="clear-history-btn" type="button" disabled>Clear history</button>
+          </div>
+        </div>
+        <div class="history-status" id="history-status" role="status" aria-live="polite"></div>
+        <div class="history-table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th scope="col">Flagged at</th>
+                <th scope="col">Input snapshot</th>
+                <th scope="col">Model</th>
+                <th scope="col">Prediction</th>
+                <th scope="col">OOD evidence</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody id="history-body">
+              <tr><td class="history-empty" colspan="6">Loading local review history…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </div>
-
-  <div class="result-grid" id="result-grid" style="display:none;">
-    <div class="result-box" id="box-roberta">
-      <h3>RoBERTa</h3>
-      <div class="label-big">—</div>
-      <div class="confidence-bar-track"><div class="confidence-bar-fill" style="width:0%"></div></div>
-      <div class="meta">
-        <div class="meta-stats">
-          <span>—</span>
-          <span>—</span>
-        </div>
-      </div>
-    </div>
-    <div class="result-box" id="box-svm">
-      <h3>SVM · LinearSVC</h3>
-      <div class="label-big">—</div>
-      <div class="confidence-bar-track"><div class="confidence-bar-fill" style="width:0%"></div></div>
-      <div class="meta">
-        <div class="meta-stats">
-          <span>—</span>
-          <span>—</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <section class="card history-card" id="ood-history" aria-labelledby="ood-history-title">
-    <div class="history-header">
-      <div class="history-title-wrap">
-        <span class="history-signal" aria-hidden="true"></span>
-        <div>
-          <h2 id="ood-history-title">OOD review history</h2>
-          <p>Flagged predictions are stored only in this browser using IndexedDB. They survive refreshes and are never sent back to the server.</p>
-        </div>
-      </div>
-      <div class="history-actions">
-        <span class="history-count" id="history-count">0 flagged</span>
-        <button class="danger" id="clear-history-btn" type="button" disabled>Clear history</button>
-      </div>
-    </div>
-    <div class="history-status" id="history-status" role="status" aria-live="polite"></div>
-    <div class="history-table-wrap">
-      <table class="history-table">
-        <thead>
-          <tr>
-            <th scope="col">Flagged at</th>
-            <th scope="col">Input snapshot</th>
-            <th scope="col">Model</th>
-            <th scope="col">Prediction</th>
-            <th scope="col">OOD evidence</th>
-            <th scope="col">Action</th>
-          </tr>
-        </thead>
-        <tbody id="history-body">
-          <tr><td class="history-empty" colspan="6">Loading local review history…</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
 
   <p class="footer-note">Model info, label names, and OOD thresholds are fetched from the API at load time — this page has no hardcoded knowledge of them.</p>
 </main>
@@ -1011,8 +1050,15 @@
     const metaContainer = box.querySelector(".meta");
     metaContainer.innerHTML = `
       <div class="meta-stats">
-        <span>${confidenceLabel} <strong>${(result.confidence * 100).toFixed(1)}%</strong></span>
-        <span>${result.latency_ms.toFixed(1)}ms · <span style="opacity: 0.5">${result.model_version}</span></span>
+        <div class="stat">
+          <span class="stat-label">${confidenceLabel}</span>
+          <strong class="stat-value">${(result.confidence * 100).toFixed(1)}%</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">latency</span>
+          <span class="stat-value">${result.latency_ms.toFixed(1)}ms</span>
+          <span class="stat-version">${result.model_version}</span>
+        </div>
       </div>
     `;
     renderOodBadge(metaContainer, result.ood);
@@ -1058,7 +1104,7 @@
       // Reset animations
       document.querySelectorAll('.result-box .label-big').forEach(el => el.textContent = "—");
       document.querySelectorAll('.confidence-bar-fill').forEach(el => el.style.width = "0%");
-      document.querySelectorAll('.meta-stats').forEach(el => el.innerHTML = "<span>—</span><span>—</span>");
+      document.querySelectorAll('.meta-stats').forEach(el => el.innerHTML = '<div class="stat"><span class="stat-label">—</span><strong class="stat-value">—</strong></div><div class="stat"><span class="stat-label">—</span><span class="stat-value">—</span></div>');
       document.querySelectorAll('.ood-badge').forEach(el => el.remove());
 
       if (bothModels) {
