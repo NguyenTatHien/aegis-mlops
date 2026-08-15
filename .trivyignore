@@ -32,6 +32,13 @@ CVE-2026-2393
 CVE-2026-2614
 CVE-2026-2652
 CVE-2026-4137
+# CVE-2026-8147 (trace-endpoint auth-bypass, CVSS 8.1): requires
+# `mlflow server` running WITH auth enabled. aegis-api runs only the
+# client lib (set_tracking_uri / sklearn.load_model / MlflowClient);
+# the deployed mlflow server container runs without auth flags. Neither
+# surface is reachable -> CVSS Environmental ≈ 0. Fixed in 3.14.0
+# (NVD/OSV); folds into the mlflow-3.x upgrade follow-up above.
+CVE-2026-8147
 
 # --- pyarrow: transitive via datasets==3.6.0, fix needs a major bump ---
 # 19.0.1 -> 23.0.1 is outside the range datasets==3.6.0 was tested
